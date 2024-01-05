@@ -1,55 +1,19 @@
-# Mardens Web App Template
+# Mardens Store Orders
 
 ## Introduction
+"Introducing the Mardens' Store Orders portal, an advanced and user-friendly platform designed to revolutionize the way our stores manage their inventory and request stock from our central distribution center. In the dynamic retail landscape, the efficiency of supply chain operations is paramount, and Store Orders is here to empower our partners in maintaining optimal stock levels with ease.
 
-Welcome to the Mardens Web App Template! This template provides a solid foundation for developing web applications at Mardens Inc. Follow the instructions below for a smooth setup and start building amazing web apps.
+Our portal provides a comprehensive solution for the end-to-end process of stock requisition, from the initial order placement to the final delivery confirmation. Store managers and authorized personnel can access the portal securely, view real-time inventory data, and place orders based on their specific store needs.
 
-## Installation
+Key Features:
+1. **Intuitive Ordering System:** The portal boasts an intuitive interface, making it easy for users to navigate through the catalog, select products, and place orders effortlessly. The user-friendly design ensures minimal training requirements for store personnel.
 
-### Git
+2. **Real-Time Inventory Updates:** Stay informed with up-to-the-minute inventory levels at the main distribution center. This feature enables store managers to make informed decisions, preventing stockouts or overstock situations.
 
-Clone the repository using the following command:
+3. **Automated Communication:** The portal facilitates seamless communication between stores and the distribution center. Automated notifications keep all stakeholders informed about order confirmations, dispatch details, and delivery schedules, promoting transparency and collaboration.
 
-```bash
-git clone --recurse https://github.com/Mardens-Inc/Web-Template.git
-```
+4. **Order Tracking and History:** Keep track of your orders in real-time and access a comprehensive order history. This feature aids in performance analysis, budgeting, and forecasting for each store, contributing to data-driven decision-making.
 
-### Composer
+5. **Customizable Order Preferences:** Tailor your orders based on unique store requirements. The portal allows for customization, ensuring that each store can order quantities and varieties that align with its specific customer demands and sales trends.
 
-Update the composer dependencies:
-
-```bash
-composer update
-```
-
-## Start Server
-
-You can choose between the provided batch file or manual setup.
-
-### Using Batch File
-
-Launch the `start-server.bat` file. It will automatically set up and start the server for you.
-
-### Manual Setup
-
-If you prefer manual setup, follow these steps:
-
-1. Navigate to the project directory in your terminal.
-
-2. Run the following command:
-
-   ```bash
-   /path/to/php.exe -S 127.0.0.1:5522
-   ```
-
-   Replace `/path/to/php.exe` with the actual path to your PHP executable and `5522` with your desired port.
-
-## Additional Notes
-
-- Ensure that your PHP version is at least 8.0 and up
-
-- Customize the server setup according to your environment.
-
-- Explore and leverage the features provided in this template to expedite your web development process.
-
-Feel free to reach out for any assistance or further guidance. Happy coding!
+Mardens' commitment to innovation and customer satisfaction extends to our Store Orders portal, a tool designed to enhance the efficiency of our supply chain and strengthen the partnership with our stores. Join us in embracing a future where stock management is not just a task but an opportunity for growth and success in the retail landscape."
