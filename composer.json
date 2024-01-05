@@ -1,0 +1,6 @@
+{
+    "require": {
+        "hashids/hashids": "^5.0",
+        "halaxa/json-machine": "^1.1"
+    }
+}
