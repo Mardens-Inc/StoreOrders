@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400;1,500;1,600;1,700;1,800&family=Oswald:wght@200;300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Open Sans';
+  font-weight: 400;
+}
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Oswald';
+  font-weight: 700;
+}
+
+html {font-size: 100%;} /* 16px */
+
+h1 {font-size: 7.595rem; /* 121.44px */}
+
+h2 {font-size: 5.063rem; /* 80.96px */}
+
+h3 {font-size: 3.375rem; /* 54.08px */}
+
+h4 {font-size: 2.250rem; /* 36px */}
+
+h5 {font-size: 1.500rem; /* 24px */}
+
+small {font-size: 0.667rem; /* 10.72px */}
