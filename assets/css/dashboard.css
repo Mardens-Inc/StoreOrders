@@ -1,0 +1,9 @@
+.panel {
+    padding: 2.625rem 0.9375rem;
+    flex-shrink: 0;
+    gap: 36px;
+    border-radius: 20px;
+    background: #1E232C;
+    box-shadow: 4px 4px 10px 0px rgba(0, 0, 0, 0.25);
+    overflow-y: scroll;
+}
