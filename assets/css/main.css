@@ -1,9 +1,4 @@
-:root {
-    --primary: #c82333;
-}
-
 body {
-    font-family: 'Poppins';
     margin: 0;
 }
 
@@ -41,7 +36,7 @@ body {
     width: 100px;
     height: 100px;
     border: var(--size) solid transparent;
-    border-left: var(--size) solid red;
+    border-left: var(--size) solid var(--primary);
     position: absolute;
     top: 50%;
     left: 50%;
