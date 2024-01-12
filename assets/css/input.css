@@ -25,3 +25,31 @@ a {
     box-shadow: 0 0 10px 0 var(--primary);
     cursor: pointer;
 }
+
+input {
+    display: inline-flex;
+    align-items: center;
+
+    background-color: #3D4758;
+    color: white;
+    font-weight: 400;
+    font-size: 1rem;
+
+    padding: 0px 10px;
+    gap: 10px;
+    height: 50px;
+
+    outline: none;
+    border: none;
+    border-radius: 10px;
+}
+
+input::placeholder {
+    color: #838C9A;
+    font-weight: 600;
+}
+
+input[type="search"] {
+    position: relative;
+    padding-left: 3rem;
+}
