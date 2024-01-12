@@ -60,17 +60,17 @@ nav .nav-item {
     transition-duration: 0.2s;
 }
 
-nav .nav-item:hover, nav .nav-item:has([active]) {
+nav .nav-item:hover, nav .nav-item[active] {
     color: white;
     background-color: #2C2E3A;
     cursor: pointer;
 }
 
-nav .nav-item:has([active]):not(:hover) {
+nav .nav-item[active]:not(:hover) {
     color: #BDC6D5;
 }
 
-nav .nav-item:has([active])::before {
+nav .nav-item[active]::before {
     position: absolute;
     content: '';
     width: 2px;
