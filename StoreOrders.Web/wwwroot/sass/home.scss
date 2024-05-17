@@ -1,0 +1,20 @@
+﻿body {
+    margin: 0;
+    padding: 0;
+    background-image: url('/images/Store Orders.webp');
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+}
+
+h1 {
+    font-size: 4rem;
+    color: white;
+    text-align: center;
+    margin-top: 20%;
+}
