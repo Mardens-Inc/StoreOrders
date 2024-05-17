@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreOrders.Web", "StoreOrders.Web\StoreOrders.Web.csproj", "{C25B95D7-AC4D-4D3D-89F5-3FA2047F2C7D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreOrders.Core", "StoreOrders.Core\StoreOrders.Core.csproj", "{6BF6D1E2-B5B8-4451-9D40-D4D7753BDA70}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C25B95D7-AC4D-4D3D-89F5-3FA2047F2C7D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C25B95D7-AC4D-4D3D-89F5-3FA2047F2C7D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C25B95D7-AC4D-4D3D-89F5-3FA2047F2C7D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C25B95D7-AC4D-4D3D-89F5-3FA2047F2C7D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6BF6D1E2-B5B8-4451-9D40-D4D7753BDA70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6BF6D1E2-B5B8-4451-9D40-D4D7753BDA70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6BF6D1E2-B5B8-4451-9D40-D4D7753BDA70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6BF6D1E2-B5B8-4451-9D40-D4D7753BDA70}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
