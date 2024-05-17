@@ -1,7 +1,39 @@
-﻿@page "/"
+﻿@inject NavigationManager nav;
+@page "/"
 
-<PageTitle>Home</PageTitle>
+<link rel="stylesheet" href="css/home.css">
 
-<h1>Hello, world!</h1>
+<PageTitle>Store Orders</PageTitle>
+<h1>Store Orders</h1>
 
-Welcome to your new app.
+<div class="form-field">
+    <input type="text" name="store-number" id="store-number" @bind="value" @oninput="@(i => { value = (i.Value as string) ?? ""; })" @onkeyup="@(i => { if (i.Key == "Enter") ValidateStoreNumber(); })">
+    <button @onclick="ValidateStoreNumber">
+        <svg width="7" height="12" viewBox="0 0 7 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M6.55772 5.46927L1.05772 -0.000183105L1.81198e-05 1.06343L4.96524 6.00108L1.81198e-05 10.9387L1.05772 12.0023L6.55772 6.53288C6.69928 6.39211 6.77887 6.20071 6.77887 6.00108C6.77887 5.80144 6.69928 5.61004 6.55772 5.46927Z" fill="white"/>
+        </svg>
+    </button>
+
+</div>
+
+
+@code{
+    private string value = "";
+    private string[] stores;
+
+    async Task<string[]> GetStores()
+    {
+        return [];
+    }
+
+    void ValidateStoreNumber()
+    {
+        if (value.Length == 0)
+        {
+            return;
+        }
+        // context.Session.SetString("storeNumber", value);
+        nav.NavigateTo($"/orders/{value}");
+    }
+
+}
