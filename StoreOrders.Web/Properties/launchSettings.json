@@ -8,6 +8,18 @@
 			"environmentVariables": {
 				"ASPNETCORE_ENVIRONMENT": "Development"
 			}
+		},
+		"watch": {
+			"commandName": "Executable",
+			"executablePath": "dotnet",
+			"commandLineArgs": "watch run",
+			"hotReloadEnabled": true,
+			"nativeDebugging": true,
+			"targetProject": "StoreOrders.Web.csproj",
+			"workingDirectory": "$(ProjectDir)",
+			"environmentVariables": {
+				"ASPNETCORE_ENVIRONMENT": "Development"
+			}
 		}
 	}
 }
