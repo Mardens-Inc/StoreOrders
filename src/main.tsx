@@ -9,6 +9,7 @@ import CatalogPage from "./assets/pages/CatalogPage.tsx";
 import Navigation from "./assets/components/Navigation.tsx";
 import {applyTheme} from "./assets/ts/Theme.ts";
 import {CartProvider} from "./assets/providers/CartProvider.tsx";
+import OrderHistoryPage from "./assets/pages/OrderHistoryPage.tsx";
 
 
 ReactDOM.createRoot($("#root")[0]!).render(
@@ -30,7 +31,8 @@ export function MainContentRenderer()
             <Navigation/>
             <Routes>
                 <Route>
-                    <Route path="/" element={<CatalogPage/>}/>
+                    <Route path="/" element={<OrderHistoryPage/>}/>
+                    <Route path="/catalog" element={<CatalogPage/>}/>
                 </Route>
             </Routes>
         </NextUIProvider>
