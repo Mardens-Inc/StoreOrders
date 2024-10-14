@@ -1,22 +1,60 @@
-interface Orders
+import StoreManagement, {Store} from "./Stores.ts";
+
+export interface Orders
 {
     id: number,
-    store: number,
+    store: Store,
     status: OrderStatus
     week: Date,
 
 }
 
-enum OrderStatus
+export enum OrderStatus
 {
-    COMPLETED,
-    CURRENT,
-    PENDING,
-    CANCELLED,
+    COMPLETED = "completed",
+    CURRENT = "current",
+    PENDING = "pending",
+    CANCELLED = "cancelled",
 }
 
 
-function getWeekNumber(date: Date): number
+export default class OrderManagement
+{
+    static async getOrders(): Promise<Orders[]>
+    {
+        const stores = await StoreManagement.getStores();
+        // return $.get("/api/orders")
+        return [
+            {
+                id: 1,
+                store: stores.find((store) => store.id === 1)!,
+                status: OrderStatus.COMPLETED,
+                week: new Date(2022, 8, 25)
+            },
+            {
+                id: 2,
+                store: stores.find((store) => store.id === 2)!,
+                status: OrderStatus.CURRENT,
+                week: new Date(2022, 8, 25)
+            },
+            {
+                id: 3,
+                store: stores.find((store) => store.id === 3)!,
+                status: OrderStatus.PENDING,
+                week: new Date(2022, 8, 25)
+            },
+            {
+                id: 4,
+                store: stores.find((store) => store.id === 4)!,
+                status: OrderStatus.CANCELLED,
+                week: new Date(2022, 8, 25)
+            }
+        ];
+    }
+}
+
+
+export function getWeekNumber(date: Date): number
 {
     // Copy date to avoid modifying the original
     const currentDate = new Date(date.getTime());
