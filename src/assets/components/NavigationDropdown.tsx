@@ -10,19 +10,27 @@ interface NavigationDropdownProps
     trigger: string | ReactNode;
     title?: string | ReactNode;
     subtitle?: string | ReactNode;
+    isOpen: boolean;
+    onOpenChange: (isOpen: boolean) => void;
     children: ReactNode[] & { type: typeof NavigationDropdownItem }[] | ReactNode & { type: typeof NavigationDropdownItem };
 }
 
 export default function NavigationDropdown(props: NavigationDropdownProps)
 {
-    const [isOpen, setIsOpen] = useState(false);
+    useEffect(() =>
+    {
+        if (props.onOpenChange)
+        {
+            props.onOpenChange(props.isOpen);
+        }
+    }, [props.isOpen]);
     return (
         <div className={"h-full"}>
-            <div className={"flex flex-row uppercase font-bold cursor-pointer hover:bg-black/10 transition-colors h-full items-center px-4"} onClick={() => setIsOpen(prev => !prev)}>
+            <div className={"flex flex-row uppercase font-bold cursor-pointer hover:bg-black/10 transition-colors h-full items-center px-4"} onClick={() => props.onOpenChange(!props.isOpen)}>
                 <span className={"mr-8"}>{props.trigger}</span>
-                <FontAwesomeIcon icon={faChevronDown} width={14} data-open={isOpen} className={"data-[open=true]:rotate-180 transition-all"}/>
+                <FontAwesomeIcon icon={faChevronDown} width={14} data-open={props.isOpen} className={"data-[open=true]:rotate-180 transition-all"}/>
             </div>
-            <div className={"w-screen max-h-[370px] h-[370px] bg-white border-b-primary border-b-2 shadow-lg fixed left-0 right-0 flex flex-row data-[open=false]:max-h-0 transition-all overflow-hidden"} data-open={isOpen}>
+            <div className={"w-screen max-h-[370px] h-[370px] bg-white border-b-primary border-b-2 shadow-lg fixed left-0 right-0 flex flex-row data-[open=false]:max-h-0 transition-all overflow-hidden"} data-open={props.isOpen}>
                 <div className={"min-w-[480px] w-[480px] bg-primary relative flex flex-col items-center justify-center"}>
                     <div className={"z-10 flex flex-col gap-4"}>
                         {props.title}
@@ -42,7 +50,8 @@ export default function NavigationDropdown(props: NavigationDropdownProps)
 export function NavigationDropdownItem(props: { children: ReactNode, icon?: ReactNode })
 {
     const [hovering, setHovering] = useState(false);
-    const key = `navigation-dropdown-item-${Math.random().toString(36).substring(7)}`;
+    const id = Math.random().toString(36).substring(7);
+    const key = `navigation-dropdown-item-${id}`;
     useEffect(() =>
     {
         $(`#${key}`)
@@ -51,6 +60,7 @@ export function NavigationDropdownItem(props: { children: ReactNode, icon?: Reac
     }, []);
     return (
         <div
+            key={key}
             id={key}
             className={
                 cn(
@@ -61,7 +71,7 @@ export function NavigationDropdownItem(props: { children: ReactNode, icon?: Reac
             }
             data-hovering={hovering}>
             {props.icon && (
-                <div className={"data-[hovering=true]:animate-[wiggle_1s_ease-in-out_infinite] data-[hovering=true]:scale-75 transform-none transition-all"} data-hovering={hovering}>
+                <div key={`icon-${id}`} className={"data-[hovering=true]:animate-[wiggle_1s_ease-in-out_infinite] data-[hovering=true]:scale-75 transform-none transition-all"} data-hovering={hovering}>
                     {props.icon}
                 </div>
 
