@@ -10,7 +10,7 @@ export default function SquareBackdrop(props: SquareBackdropIconProperties)
 {
     return (
         <svg width={props.size ?? props.width ?? "464"} height={props.size ?? props.height ?? "365"} viewBox="0 0 464 365" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <g clip-path="url(#clip0_142_5613)">
+            <g clipPath="url(#clip0_142_5613)">
                 <path d="M376.596 95.7648L374.324 4.11621H403.835L401.895 95.7648H376.596ZM375.186 107.801H402.956V132.255H375.186V107.801Z" fill={props.fill ?? "#DE262E"}/>
                 <path d="M274.95 227.916L306.168 182.373L304.626 237.565L356.651 219.063L322.979 262.815L375.949 278.415L322.979 294.016L356.651 337.768L304.626 319.266L306.168 374.457L274.95 328.898L243.748 374.457L245.273 319.266L193.265 337.768L226.937 294.016L173.967 278.415L226.937 262.815L193.265 219.063L245.273 237.565L243.748 182.373L274.95 227.916Z" fill={props.fill ?? "#DE262E"}/>
                 <path
