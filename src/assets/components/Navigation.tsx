@@ -6,10 +6,11 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import NavigationDropdown, {NavigationDropdownItem} from "./NavigationDropdown.tsx";
 import Pants from "../images/Pants.svg.tsx";
 import grid from "../images/grid.svg";
+import {useState} from "react";
 
 export default function Navigation()
 {
-
+    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
 
     return (
         <Navbar maxWidth={"full"} className={"bg-primary text-white"}>
@@ -17,8 +18,10 @@ export default function Navigation()
                 <NavbarBrand className={"max-w-[200px] mr-4"}>
                     <Image src={logo} radius={"none"} width={200}/>
                 </NavbarBrand>
-                <NavbarItem className={"h-full"}>
+                <NavbarItem key={"category-dropdown"} className={"h-full"}>
                     <NavigationDropdown
+                        isOpen={openDropdown === 0}
+                        onOpenChange={(isOpen) => setOpenDropdown(isOpen ? 0 : null)}
                         trigger={"categories"}
                         title={
                             <div className={"flex flex-col items-center justify-center text-center text-4xl uppercase"}>
@@ -34,8 +37,10 @@ export default function Navigation()
             </NavbarContent>
 
             <NavbarContent justify="end">
-                <NavbarItem className={"h-full"}>
+                <NavbarItem key={"cart-dropdown"} className={"h-full"}>
                     <NavigationDropdown
+                        isOpen={openDropdown === 1}
+                        onOpenChange={(isOpen) => setOpenDropdown(isOpen ? 1 : null)}
                         trigger={<><FontAwesomeIcon icon={faShoppingCart}/> cart</>}
                         title={
                             <div className={"flex flex-col items-center justify-center text-center text-4xl uppercase"}>
@@ -50,7 +55,7 @@ export default function Navigation()
                         )), <NavigationDropdownItem icon={<Image src={grid} radius={"none"} width={64}/>}>Checkout</NavigationDropdownItem>]}
                     </NavigationDropdown>
                 </NavbarItem>
-                <NavbarItem>
+                <NavbarItem key={"user-dropdown"}>
                     <Dropdown classNames={{content: "rounded-none w-full"}}>
                         <DropdownTrigger>
                             <div className={"flex flex-row cursor-pointer text-white items-center gap-8 hover:bg-black/10 p-3 transition-colors"}>
