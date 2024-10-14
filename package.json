@@ -3,17 +3,22 @@
   "private": true,
   "version": "0.0.0",
   "description": "Welcome to Mardens' Store Orders portal, your one-stop solution for seamless stock management! Streamline the process of ordering inventory from our main distribution center with just a few clicks. Enjoy real-time updates, efficient communication, and optimized stock replenishment for your stores.",
-  "author": "Drew Chsae",
+  "author": "Drew Chase",
   "license": "GPL-3.0-or-later",
   "repository": "https://github.com/Mardens-Inc/StoreOrders",
   "type": "module",
   "scripts": {
+    "build api": "cargo build --release",
+    "run api": "cargo run --bin project_name",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build frontend": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "build and preview": "npm run build && npm run preview",
-    "publish": "npm run build && node publish.js"
+    "publish": "node scripts/publish.js",
+    "run": "node scripts/run.js",
+    "watch api": "cargo watch -x \"run --bin store-orders\" -C dist -N --why -w ../src-actix/",
+    "watch frontend": "vite build --watch"
   },
   "dependencies": {
     "@nextui-org/react": "^2.4.6",
@@ -46,6 +51,7 @@
     "tailwindcss": "^3.4.10",
     "typescript": "^5.5.4",
     "vite": "^5.4.0",
-    "basic-ftp": "^5.0.5"
+    "basic-ftp": "^5.0.5",
+    "archiver": "^7.0.1"
   }
 }
