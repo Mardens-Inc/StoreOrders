@@ -1,12 +1,18 @@
-import {Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip} from "@nextui-org/react";
+import {Table, TableBody, TableCell, TableColumn, TableHeader, TableRow} from "@nextui-org/react";
 import {useEffect, useState} from "react";
-import OrderManagement, {getWeekNumber, Orders} from "../ts/Orders.ts";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faFilter} from "@fortawesome/free-solid-svg-icons";
+import OrderManagement, {getWeekNumber, Orders, OrderStatus} from "../ts/Orders.ts";
+import StoreFilterDropdown from "../components/OrderHistory/StoreFilterDropdown.tsx";
+import OrderStatusFilterDropdown from "../components/OrderHistory/OrderStatusFilterDropdown.tsx";
+import WeekFilterDropdown from "../components/OrderHistory/WeekFilterDropdown.tsx";
 
 export default function OrderHistoryPage()
 {
     const [orders, setOrders] = useState<Orders[]>([]);
+    const [filterByStores, setFilterByStores] = useState<string[] | "all">("all");
+    const [filterByStatus, setFilterByStatus] = useState<OrderStatus[] | "all">("all");
+    // const [filterByWeek, setFilterByWeek] = useState<number | "all">("all");
+
+
     useEffect(() =>
     {
         OrderManagement.getOrders().then((orders) => setOrders(orders));
@@ -16,15 +22,13 @@ export default function OrderHistoryPage()
         <div className={"flex flex-col mx-10 mt-4"}>
             <h1 className={"text-4xl font-bold"}>Order History</h1>
             <p className={"italic mb-4"}>Here you can view your order history.</p>
-            <Table
-                removeWrapper
-            >
+            <Table removeWrapper aria-label="Order history table">
                 <TableHeader>
-                    <TableColumn>Week</TableColumn>
-                    <TableColumn>Week Starting</TableColumn>
-                    <TableColumn>Order#</TableColumn>
-                    <TableColumn>Store <StoreFilterDropdown/></TableColumn>
-                    <TableColumn>Status</TableColumn>
+                    <TableColumn allowsSorting key={"week"}>Week</TableColumn>
+                    <TableColumn allowsSorting key={"week-start"}>Week Starting <WeekFilterDropdown/></TableColumn>
+                    <TableColumn allowsSorting key={"order-number"}>Order#</TableColumn>
+                    <TableColumn allowsSorting key={"store"}>Store <StoreFilterDropdown value={filterByStores} onValueChange={setFilterByStores}/></TableColumn>
+                    <TableColumn allowsSorting key={"status"}>Status <OrderStatusFilterDropdown value={filterByStatus} onValueChange={setFilterByStatus}/></TableColumn>
                 </TableHeader>
                 <TableBody>
                     {orders.map((order) => (
@@ -42,27 +46,3 @@ export default function OrderHistoryPage()
     );
 }
 
-function StoreFilterDropdown()
-{
-    return (
-        <Dropdown>
-            <DropdownTrigger>
-                <span>
-                    <Tooltip content={"Filter by Stores"} classNames={{base: "pointer-events-none"}}>
-                        <Button
-                            size={"sm"}
-                            className={"min-w-0 w-8 h-8"}
-                            variant={"light"}
-                            onPressStart={e => e.continuePropagation()}
-                        >
-                            <FontAwesomeIcon icon={faFilter}/>
-                        </Button>
-                    </Tooltip>
-                </span>
-            </DropdownTrigger>
-            <DropdownMenu>
-                <DropdownItem>hello world</DropdownItem>
-            </DropdownMenu>
-        </Dropdown>
-    );
-}
