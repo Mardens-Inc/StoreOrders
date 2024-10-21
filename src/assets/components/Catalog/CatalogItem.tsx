@@ -1,4 +1,4 @@
-import {Button, ButtonGroup, Image, Tooltip} from "@nextui-org/react";
+import {Button, ButtonGroup, Image, Input, Tooltip} from "@nextui-org/react";
 import {useEffect, useState} from "react";
 import {useCart} from "../../providers/CartProvider.tsx";
 import {View} from "../../pages/CatalogPage.tsx";
@@ -46,12 +46,33 @@ export default function CatalogItem(props: CatalogItemProps)
                 </div>
                 <ButtonGroup className={"flex flex-row items-center w-full py-2"}>
                     <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</Button>
-                    <Button color={"primary"} className={"font-medium min-w-[150px] grow shrink"} onClick={() =>
+                    <Button color={"primary"} className={"font-medium min-w-0 grow shrink justify-end pr-1"} onClick={() =>
                     {
                         addProduct({id: id, image: props.image, name: props.name, price: props.price}, quantity);
                         setQuantity(1);
                         toast("Item added to cart", {description: `${quantity} ${props.name} added to cart`});
-                    }}>Add <b>{quantity}</b> to Order</Button>
+                    }}>
+                        Add
+                    </Button>
+                    <Input
+                        value={quantity.toString()}
+                        onValueChange={value => setQuantity(+value.replace(/[^0-9]/g, ""))}
+                        radius={"none"}
+                        className={"w-6"}
+                        classNames={{
+                            input: "!text-white text-center",
+                            inputWrapper: "bg-primary data-[hover=true]:bg-primary/80 data-[focus=true]:!bg-primary/80 p-0"
+                        }}
+                        variant={"flat"}
+                    />
+                    <Button color={"primary"} className={"font-medium min-w-0 grow shrink justify-start pl-1"} onClick={() =>
+                    {
+                        addProduct({id: id, image: props.image, name: props.name, price: props.price}, quantity);
+                        setQuantity(1);
+                        toast("Item added to cart", {description: `${quantity} ${props.name} added to cart`});
+                    }}>
+                        to Order
+                    </Button>
                     <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => prev + 1)}>+</Button>
                 </ButtonGroup>
             </div>
