@@ -1,7 +1,14 @@
-interface Product
+export interface Product
 {
-    id: number;
+    id: string;
     name: string;
     price: number;
     image: string;
+}
+
+export enum ProductCategory{
+    Food = "Food",
+    Hardware = "Hardware",
+    Health = "Health",
+    Clothing = "Clothing",
 }
