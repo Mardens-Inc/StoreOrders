@@ -12,9 +12,9 @@ import $ from "jquery";
  */
 export enum Theme
 {
-    default,
-    light,
-    dark
+    default = "default",
+    light = "light",
+    dark = "dark",
 }
 
 /**
