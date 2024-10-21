@@ -37,7 +37,7 @@ export default function CalendarDropdown(props: CalendarDropdownProps)
             }}
         >
             <DropdownTrigger>
-                {mutableProps.useButton ? mutableProps.useButton(date) : (
+                {mutableProps.useButton !== undefined ? mutableProps.useButton(date) : (
                     <Button
                         {...mutableProps.triggerProps}
                         endContent={<FontAwesomeIcon icon={faChevronDown}/>}
