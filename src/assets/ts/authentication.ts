@@ -100,7 +100,10 @@ export default class Authentication
         {
             const response = await fetch(this.apiUrl, {
                 method: "POST",
-                body: formData
+                body: formData,
+                headers:{
+                    "accept": "application/json"
+                }
             });
 
             const data = await response.json();
