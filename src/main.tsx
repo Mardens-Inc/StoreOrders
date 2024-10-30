@@ -13,6 +13,8 @@ import OrderHistoryPage from "./assets/pages/OrderHistoryPage.tsx";
 import {AuthProviderProvider} from "./assets/providers/AuthProviderProvider.tsx";
 import {ThemeProvider} from "./assets/providers/ThemeProvider.tsx";
 import {Toaster} from "sonner";
+import PageNotFound from "./assets/pages/PageNotFound.tsx";
+import EditCatalogPage from "./assets/pages/EditCatalogPage.tsx";
 
 export const setTitle = (title?: string) => document.title = title ? `${title} - Store Orders` : "Store Orders";
 
@@ -44,8 +46,12 @@ export function MainContentRenderer()
             <Navigation/>
             <Routes>
                 <Route>
-                    <Route path="/" element={<OrderHistoryPage/>}/>
-                    <Route path="/catalog" element={<CatalogPage/>}/>
+                    <Route path="/" element={<CatalogPage/>}/>
+                    <Route path={"/catalog/edit"} element={<EditCatalogPage/>}/>
+                    <Route path="/order/history" element={<OrderHistoryPage/>}/>
+
+                    {/* Error 404 Page */}
+                    <Route path="*" element={<PageNotFound/>}/>
                 </Route>
             </Routes>
         </NextUIProvider>
