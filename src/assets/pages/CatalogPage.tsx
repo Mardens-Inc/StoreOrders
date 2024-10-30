@@ -69,12 +69,14 @@ export default function CatalogPage()
                     aria-label={"price range"}
                     label={"Price Range"}
                     size={"lg"}
+                    key={"price-range"}
 
                     renderValue={() =>
                     {
                         return (
                             <div className={"flex flex-row gap-2"}>
                                 <Input
+                                    key={"min"}
                                     startContent={<FontAwesomeIcon icon={faDollarSign}/>}
                                     classNames={{inputWrapper: "bg-default-200"}}
                                     className={"min-w-24 w-24"}
@@ -84,6 +86,7 @@ export default function CatalogPage()
                                     onValueChange={value => setPriceRange([parseFloat(value.replace(/[^0-9.]/g, "")), priceRange[1]])}
                                 />
                                 <Input
+                                    key={"max"}
                                     startContent={<FontAwesomeIcon icon={faDollarSign}/>}
                                     classNames={{inputWrapper: "bg-default-200"}}
                                     className={"min-w-24 w-24"}
@@ -113,14 +116,14 @@ export default function CatalogPage()
             <ScrollShadow className={"max-h-[85dvh] min-w-[300px]"}>
                 {view === View.LIST ? (
                     <div className={"flex flex-col"}>
-                        {Array.from({length: 13}).map(() => (
-                            <CatalogItem view={view} name={"Blue Diamond Smokehouse Almonds"} price={49.99} image={"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRSTbkqwdWqSqAABwUNdSEcdH0EaVTQEWkUeh7j1pUjPPtvvtdins3eDpcsxA15Klvuvw17sJIO2ObvHg1UgKskCcDzed7eUcPLZfPHBP9j7AXCr_iOdQy7KQ"}/>
+                        {Array.from({length: 13}).map((_,i) => (
+                            <CatalogItem key={`cat-item-${i}`} view={view} name={"Blue Diamond Smokehouse Almonds"} price={49.99} image={"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRSTbkqwdWqSqAABwUNdSEcdH0EaVTQEWkUeh7j1pUjPPtvvtdins3eDpcsxA15Klvuvw17sJIO2ObvHg1UgKskCcDzed7eUcPLZfPHBP9j7AXCr_iOdQy7KQ"}/>
                         ))}
                     </div>
                 ) : (
                     <div className={"flex flex-row flex-wrap"}>
-                        {Array.from({length: 13}).map(() => (
-                            <CatalogItem view={view} name={"Blue Diamond Smokehouse Almonds"} price={49.99} image={"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRSTbkqwdWqSqAABwUNdSEcdH0EaVTQEWkUeh7j1pUjPPtvvtdins3eDpcsxA15Klvuvw17sJIO2ObvHg1UgKskCcDzed7eUcPLZfPHBP9j7AXCr_iOdQy7KQ"}/>
+                        {Array.from({length: 13}).map((_,i) => (
+                            <CatalogItem key={`cat-item-${i}`} view={view} name={"Blue Diamond Smokehouse Almonds"} price={49.99} image={"https://encrypted-tbn0.gstatic.com/shopping?q=tbn:ANd9GcRSTbkqwdWqSqAABwUNdSEcdH0EaVTQEWkUeh7j1pUjPPtvvtdins3eDpcsxA15Klvuvw17sJIO2ObvHg1UgKskCcDzed7eUcPLZfPHBP9j7AXCr_iOdQy7KQ"}/>
                         ))}
                     </div>
                 )}
