@@ -1,21 +1,18 @@
 import {Navbar, NavbarBrand, NavbarContent, NavbarItem} from "@nextui-org/navbar";
 import {Avatar, Badge, Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger, Image, Input, Link, Select, SelectItem, Tooltip} from "@nextui-org/react";
-import logo from "../images/mardens-logo.svg";
 import {faCalendarDays, faChevronDown, faEdit, faHistory, faPlus, faShoppingCart, faSignOut, faTrash} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import NavigationDropdown, {NavigationDropdownItem} from "./NavigationDropdown.tsx";
-import Pants from "../images/Pants.svg.tsx";
 import {useEffect, useState} from "react";
 import {useAuthProvider} from "../providers/AuthProviderProvider.tsx";
 import LoginForm from "./LoginForm.tsx";
 import {Theme} from "../ts/Theme.ts";
 import {useTheme} from "../providers/ThemeProvider.tsx";
 import {useCart} from "../providers/CartProvider.tsx";
+import MardensLogo from "../images/MardensLogo.svg.tsx";
 
 export default function Navigation()
 {
     const {auth, isLoggedIn, logout} = useAuthProvider();
-    const [openDropdown, setOpenDropdown] = useState<number | null>(null);
     const [username, setUsername] = useState<string>(isLoggedIn ? auth.getUserProfile().username : "Guest");
     const {theme, setTheme} = useTheme();
     const {cart, removeProduct} = useCart();
@@ -27,37 +24,20 @@ export default function Navigation()
 
 
     return (
-        <Navbar maxWidth={"full"} className={"bg-primary text-white"}>
+        <Navbar maxWidth={"full"} className={"dark:bg-neutral-800 bg-neutral-100 text-white"}>
             <NavbarContent justify={"start"} key={"navbar-start-content"}>
                 <NavbarBrand className={"max-w-[200px] mr-4"} key={"navbar-brand"} as={Link} href={"/"}>
-                    <Image src={logo} radius={"none"} width={200} key={"navbar-logo"}/>
+                    <MardensLogo/>
                 </NavbarBrand>
-                <NavbarItem key={"category-dropdown"} className={"h-full"}>
-                    <NavigationDropdown
-                        key={"category-dropdown-item"}
-                        isOpen={openDropdown === 0}
-                        onOpenChange={(isOpen) => setOpenDropdown(isOpen ? 0 : null)}
-                        trigger={"categories"}
-                        title={
-                            <div className={"flex flex-col items-center justify-center text-center text-4xl uppercase"}>
-                                <p className={"font-thin text-[29.06px]"} key={"select-a"}>select a</p>
-                                <p className={"font-black text-[47px]"} key={"category"}>category</p>
-                            </div>
-                        }
-                        subtitle={<p className={"text-center"} key={"category-subtitle"}>To find your item by category,<br/>select a category here</p>}
-                    >
-                        <NavigationDropdownItem key={"pants-category"} icon={<Pants/>}>Clothing</NavigationDropdownItem>
-                    </NavigationDropdown>
-                </NavbarItem>
             </NavbarContent>
 
             <NavbarContent justify="end" key={"navbar-end-content"}>
                 <NavbarItem key={"cart-dropdown"} className={"h-full flex items-center"}>
-                    <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"user-dropdown-content"}>
-                        <DropdownTrigger key={"user-dropdown-trigger"}>
+                    <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"cart-dropdown-content"}>
+                        <DropdownTrigger key={"cart-dropdown-trigger"}>
                             <div>
-                                <Badge content={cart.length}>
-                                    <Button radius={"full"} className={"min-w-0 w-10 h-10 bg-white"} onPressStart={e => e.continuePropagation()}>
+                                <Badge content={cart.length} showOutline={false} color={"primary"} variant={"shadow"} isInvisible={cart.length <= 0}>
+                                    <Button radius={"full"} className={"min-w-0 w-10 h-10 dark:bg-white"} onPressStart={e => e.continuePropagation()}>
                                         <FontAwesomeIcon icon={faShoppingCart} color={"black"}/>
                                     </Button>
                                 </Badge>
@@ -99,10 +79,10 @@ export default function Navigation()
                     </Dropdown>
                 </NavbarItem>
                 <NavbarItem key={"user-dropdown"} className={"h-full"}>
-                    <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75  backdrop-blur-md"}} key={"user-dropdown-content"}>
+                    <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"user-dropdown-content"}>
                         <DropdownTrigger key={"user-dropdown-trigger"}>
-                            <div className={"flex flex-row uppercase font-bold cursor-pointer hover:bg-black/10 transition-colors h-full items-center px-4"}>
-                                <span className={"mr-8 inline-flex items-center justify-center gap-2"}><Avatar/> {username}</span>
+                            <div className={"flex flex-row uppercase font-bold cursor-pointer hover:bg-black/10 transition-colors h-full items-center px-4 text-foreground"}>
+                                <span className={"mr-8 inline-flex items-center justify-center gap-2"}><Avatar className={"dark:bg-white text-black"}/> {username}</span>
                                 <FontAwesomeIcon icon={faChevronDown} width={14}/>
                             </div>
                         </DropdownTrigger>
@@ -124,7 +104,7 @@ export default function Navigation()
                                             key={"new-order"}
                                             description={"View the catalog to start a new order"}
                                             endContent={<FontAwesomeIcon icon={faPlus}/>}
-                                            href={"/catalog"}
+                                            href={"/"}
                                         >
                                             New Order
                                         </DropdownItem>
@@ -140,7 +120,7 @@ export default function Navigation()
                                             key={"order-history"}
                                             description={"View your order history"}
                                             endContent={<FontAwesomeIcon icon={faHistory}/>}
-                                            href={"/"}
+                                            href={"/order/history"}
                                         >
                                             Order History
                                         </DropdownItem>
@@ -167,6 +147,8 @@ export default function Navigation()
                                             onClick={logout}
                                             closeOnSelect={false}
                                             description={"Logout from your account"}
+                                            color={"danger"}
+                                            className={"text-danger"}
                                         >
                                             Logout
                                         </DropdownItem>
