@@ -92,10 +92,6 @@ function debug(data) {
         let style = 'color: blue; font-weight: bold;';
 
         switch (logLevel) {
-            case 'TRACE':
-                style = 'color: gray;';
-                console.trace(`%c[${timestamp} ${logLevel} ${source}]%c ${message}`, style, 'color: white;');
-                break;
             case 'DEBUG':
                 style = 'color: green;';
                 console.debug(`%c[${timestamp} ${logLevel} ${source}]%c ${message}`, style, 'color: white;');
