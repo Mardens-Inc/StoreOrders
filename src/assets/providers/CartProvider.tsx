@@ -1,4 +1,4 @@
-import {createContext, Dispatch, ReactNode, SetStateAction, useContext, useState} from "react";
+import {createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect, useState} from "react";
 import {Product} from "../ts/Products.ts";
 
 export interface CartItem extends Product
@@ -19,7 +19,17 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({children}: { children: ReactNode })
 {
-    const [cart, setCart] = useState<CartItem[]>([]);
+    const [cart, setCart] = useState<CartItem[]>(() =>
+    {
+        const cart = localStorage.getItem("cart");
+        return cart ? JSON.parse(cart) : [];
+    });
+
+    useEffect(() =>
+    {
+        localStorage.setItem("cart", JSON.stringify(cart));
+    }, [cart]);
+
     return (
         <CartContext.Provider value={
             {
