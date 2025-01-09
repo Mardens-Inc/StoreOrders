@@ -1,5 +1,5 @@
 import {Navbar, NavbarBrand, NavbarContent, NavbarItem} from "@nextui-org/navbar";
-import {Avatar, Badge, Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger, Image, Input, Link, Select, SelectItem, Tooltip} from "@nextui-org/react";
+import {Avatar, Badge, Button, Dropdown, DropdownItem, DropdownMenu, DropdownSection, DropdownTrigger, Image, Input, Link, Popover, PopoverContent, PopoverTrigger, ScrollShadow, Select, SelectItem, Tooltip} from "@nextui-org/react";
 import {faCalendarDays, faChevronDown, faEdit, faHistory, faPlus, faShoppingCart, faSignOut, faTrash} from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {useEffect, useState} from "react";
@@ -33,8 +33,8 @@ export default function Navigation()
 
             <NavbarContent justify="end" key={"navbar-end-content"}>
                 <NavbarItem key={"cart-dropdown"} className={"h-full flex items-center"}>
-                    <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"cart-dropdown-content"}>
-                        <DropdownTrigger key={"cart-dropdown-trigger"}>
+                    <Popover classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"cart-dropdown-content"}>
+                        <PopoverTrigger key={"cart-dropdown-trigger"}>
                             <div>
                                 <Badge content={cart.length} showOutline={false} color={"primary"} variant={"shadow"} isInvisible={cart.length <= 0}>
                                     <Button radius={"full"} className={"min-w-0 w-10 h-10 dark:bg-white"} onPressStart={e => e.continuePropagation()}>
@@ -42,13 +42,13 @@ export default function Navigation()
                                     </Button>
                                 </Badge>
                             </div>
-                        </DropdownTrigger>
-                        <DropdownMenu classNames={{list: "bg-transparent max-h-[400px] overflow-y-auto"}} key={"user-dropdown-menu"}>
-                            {(() =>
-                            {
-                                return cart.map(item => (
-                                    <DropdownItem key={item.id} closeOnSelect={false}>
-                                        <div id={item.id} className={"gap-4 flex flex-row items-center justify-center rounded-2xl"}>
+                        </PopoverTrigger>
+                        <PopoverContent key={"user-dropdown-menu"}>
+                            <ScrollShadow className={"max-h-[400px] overflow-y-auto pr-4"}>
+                                {(() =>
+                                {
+                                    return cart.map(item => (
+                                        <div key={item.id} id={item.id} className={"gap-4 flex flex-row items-center justify-center rounded-2xl"}>
                                             <div className={"bg-white w-[64] h-[64] rounded-lg overflow-hidden"}>
                                                 <Image src={item.image} width={64} height={64} className={"object-center object-contain data-[hover=true]:scale-110"}/>
                                             </div>
@@ -72,11 +72,12 @@ export default function Navigation()
                                             </div>
                                             <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => removeProduct(item)}><FontAwesomeIcon icon={faTrash}/></Button>
                                         </div>
-                                    </DropdownItem>
-                                ));
-                            })()}
-                        </DropdownMenu>
-                    </Dropdown>
+                                    ));
+                                })()}
+                            </ScrollShadow>
+                            <Button color={"primary"} className={"w-4/6 my-4 mx-auto"}>Create Order</Button>
+                        </PopoverContent>
+                    </Popover>
                 </NavbarItem>
                 <NavbarItem key={"user-dropdown"} className={"h-full"}>
                     <Dropdown classNames={{content: "w-full min-w-[300px] bg-default-100/75 backdrop-blur-md"}} key={"user-dropdown-content"}>
