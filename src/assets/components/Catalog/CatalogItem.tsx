@@ -7,6 +7,7 @@ import {toast} from "sonner";
 
 interface CatalogItemProps
 {
+    key: string;
     name: string;
     price: number;
     image: string;
@@ -15,13 +16,19 @@ interface CatalogItemProps
 
 export default function CatalogItem(props: CatalogItemProps)
 {
-    const [id] = useState(`catalog-item-${Math.random().toString(36).substring(7)}`);
+    const [id] = useState(`catalog-item-${props.key}`);
     const [hovering, setHovering] = useState<boolean>(false);
     const [quantity, setQuantity] = useState<number>(1);
     const [tmpQuantity, setTmpQuantity] = useState(quantity);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isAddedToCart, setIsAddedToCart] = useState(false);
 
-    const {addProduct} = useCart();
+    const {addProduct, cart} = useCart();
+
+    useEffect(() =>
+    {
+        setIsAddedToCart(cart.some(item => item.id === id));
+    }, [cart]);
 
 
     useEffect(() =>
@@ -79,31 +86,33 @@ export default function CatalogItem(props: CatalogItemProps)
                         )}
                         <p className={"text-sm font-bold opacity-50"}>${props.price.toFixed(2)}</p>
                     </div>
-                    <ButtonGroup className={"flex flex-row items-center w-full py-2"}>
-                        <Tooltip content={"Decrement quantity by 1"}>
-                            <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</Button>
-                        </Tooltip>
-                        <Tooltip content={"Add item to cart"}>
-                            <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() =>
-                            {
-                                addProduct({id: id, image: props.image, name: props.name, price: props.price}, quantity);
-                                setQuantity(1);
-                                toast("Item added to cart", {description: `${quantity} ${props.name} added to cart`});
-                            }}>
-                                Add {quantity} to Order
-                            </Button>
-                        </Tooltip>
-                        <Tooltip content={"Increment quantity by 1"}>
-                            <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => prev + 1)}>+</Button>
-                        </Tooltip>
-                        <Tooltip content={"Set custom value"}>
-                            <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() =>
-                            {
-                                setTmpQuantity(quantity);
-                                setIsModalOpen(true);
-                            }}>++</Button>
-                        </Tooltip>
-                    </ButtonGroup>
+                    {isAddedToCart ? <Button isDisabled color={"primary"}>Added to Order!</Button> :
+                        <ButtonGroup className={"flex flex-row items-center w-full py-2"}>
+                            <Tooltip content={"Decrement quantity by 1"}>
+                                <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => Math.max(1, prev - 1))}>-</Button>
+                            </Tooltip>
+                            <Tooltip content={"Add item to cart"}>
+                                <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() =>
+                                {
+                                    addProduct({id: id, image: props.image, name: props.name, price: props.price}, quantity);
+                                    setQuantity(1);
+                                    toast("Item added to cart", {description: `${quantity} ${props.name} added to cart`});
+                                }}>
+                                    Add {quantity} to Order
+                                </Button>
+                            </Tooltip>
+                            <Tooltip content={"Increment quantity by 1"}>
+                                <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() => setQuantity(prev => prev + 1)}>+</Button>
+                            </Tooltip>
+                            <Tooltip content={"Set custom value"}>
+                                <Button color={"primary"} className={"font-medium min-w-0 grow shrink"} onClick={() =>
+                                {
+                                    setTmpQuantity(quantity);
+                                    setIsModalOpen(true);
+                                }}>++</Button>
+                            </Tooltip>
+                        </ButtonGroup>
+                    }
                 </div>
             </div>
         </>
