@@ -1,12 +1,15 @@
 use crate::asset_endpoint::AssetsAppConfig;
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
+use actix_web::web::Data;
 use anyhow::Result;
+use database_common_lib::database_connection::{set_database_name, DatabaseConnectionData};
 use log::*;
 use serde_json::json;
 use vite_actix::start_vite_server;
 
 mod asset_endpoint;
 mod http_error;
+mod orders;
 
 pub static DEBUG: bool = cfg!(debug_assertions);
 const PORT: u16 = 1422;
@@ -20,6 +23,14 @@ pub async fn run() -> Result<()> {
         })
         .format_timestamp(None)
         .init();
+    set_database_name("store-orders")?;
+    let connection_data = DatabaseConnectionData::get().await?;
+    let pool = connection_data.get_pool().await?;
+    // Initialize the database tables.
+    orders::orders_db::initialize(&pool).await?;
+    
+    
+    pool.close().await;
 
     let server = HttpServer::new(move || {
         App::new()
@@ -36,7 +47,7 @@ pub async fn run() -> Result<()> {
                         .into()
                     }),
             )
-            .service(web::scope("api"))
+            .service(web::scope("api").app_data(Data::new(connection_data.clone())))
             .configure_frontend_routes()
     })
     .workers(4)
