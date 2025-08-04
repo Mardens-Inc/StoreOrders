@@ -1,6 +1,6 @@
 use crate::asset_endpoint::AssetsAppConfig;
-use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use actix_web::web::Data;
+use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use anyhow::Result;
 use database_common_lib::database_connection::{set_database_name, DatabaseConnectionData};
 use log::*;
@@ -27,9 +27,8 @@ pub async fn run() -> Result<()> {
     let connection_data = DatabaseConnectionData::get().await?;
     let pool = connection_data.get_pool().await?;
     // Initialize the database tables.
-    orders::orders_db::initialize(&pool).await?;
-    
-    
+    orders::initialize(&pool).await?;
+
     pool.close().await;
 
     let server = HttpServer::new(move || {
@@ -48,6 +47,7 @@ pub async fn run() -> Result<()> {
                     }),
             )
             .service(web::scope("api").app_data(Data::new(connection_data.clone())))
+            .configure(orders::configure)
             .configure_frontend_routes()
     })
     .workers(4)

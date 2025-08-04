@@ -12,3 +12,8 @@ pub struct StoreOrderRecord {
     pub status_changed_to_pending: Option<chrono::NaiveDateTime>,
     pub status_changed_to_completed: Option<chrono::NaiveDateTime>,
 }
+
+impl StoreOrderRecord {
+    // Data implementation
+    // ...
+}
