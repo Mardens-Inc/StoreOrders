@@ -29,6 +29,7 @@ thiserror = "2.0.11"
 vite-actix = "0.2.5"
 sqlx = { version = "0.8.6", features = ["mysql", "sqlx-mysql", "macros", "derive", "runtime-tokio", "chrono"] }
 chrono = {version = "0.4.41", features = ["now", "serde"]}
+rand = "0.8.5"
 # Mardens Inc. Libraries
 database-common-lib = { git = "https://github.com/Mardens-Inc/database-common-lib.git" }
 actix-authentication-middleware = { git = "https://github.com/Mardens-Inc/actix-authentication-middleware.git" }

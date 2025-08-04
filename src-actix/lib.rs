@@ -1,15 +1,16 @@
 use crate::asset_endpoint::AssetsAppConfig;
 use actix_web::web::Data;
-use actix_web::{middleware, web, App, HttpResponse, HttpServer};
+use actix_web::{App, HttpResponse, HttpServer, middleware, web};
 use anyhow::Result;
-use database_common_lib::database_connection::{set_database_name, DatabaseConnectionData};
+use database_common_lib::database_connection::{DatabaseConnectionData, set_database_name};
 use log::*;
 use serde_json::json;
 use vite_actix::start_vite_server;
 
 mod asset_endpoint;
-mod http_error;
+mod categories;
 mod orders;
+mod products;
 
 pub static DEBUG: bool = cfg!(debug_assertions);
 const PORT: u16 = 1422;
@@ -26,7 +27,10 @@ pub async fn run() -> Result<()> {
     set_database_name("store-orders")?;
     let connection_data = DatabaseConnectionData::get().await?;
     let pool = connection_data.get_pool().await?;
-    // Initialize the database tables.
+
+    // Initialize the database tables in proper order
+    categories::initialize(&pool).await?;
+    products::initialize(&pool).await?;
     orders::initialize(&pool).await?;
 
     pool.close().await;
@@ -46,8 +50,16 @@ pub async fn run() -> Result<()> {
                         .into()
                     }),
             )
-            .service(web::scope("api").app_data(Data::new(connection_data.clone())))
-            .configure(orders::configure)
+            .service(
+                web::scope("/api")
+                    .app_data(Data::new(connection_data.clone()))
+                    .configure(categories::configure)
+                    .configure(products::configure)
+                    .configure(orders::configure)
+                    .default_service(web::to(|| async {
+                        HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
+                    })),
+            )
             .configure_frontend_routes()
     })
     .workers(4)

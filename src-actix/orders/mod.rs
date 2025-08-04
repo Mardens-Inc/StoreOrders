@@ -1,4 +1,3 @@
-mod inventory;
 mod orders_data;
 mod orders_db;
 mod orders_endpoint;
