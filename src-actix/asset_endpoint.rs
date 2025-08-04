@@ -1,5 +1,5 @@
 use crate::DEBUG;
-use actix_files::file_extension_to_mime;
+use actix_files::{file_extension_to_mime, Files};
 use actix_web::error::ErrorInternalServerError;
 use actix_web::{get, web, App, Error, HttpRequest, HttpResponse, Responder};
 use include_dir::{include_dir, Dir};

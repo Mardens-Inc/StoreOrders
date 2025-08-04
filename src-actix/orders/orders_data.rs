@@ -76,17 +76,26 @@ pub struct UpdateOrderStatusRequest {
 #[derive(Debug, Clone)]
 pub struct UserContext {
     pub user_id: u64,
-    pub store_id: u64,
-    pub username: String,
+    pub store_id: Option<u64>,
+    pub role: String,
 }
 
 impl UserContext {
+    // Create from JWT claims
+    pub fn from_claims(user_id: u64, store_id: Option<u64>, role: String) -> Self {
+        Self {
+            user_id,
+            store_id,
+            role,
+        }
+    }
+
     // Stub implementation - in practice this would come from JWT/session
     pub fn from_request() -> Self {
         Self {
             user_id: 1, // Default user ID for demonstration
-            store_id: 1, // Default store ID for demonstration
-            username: "demo_user".to_string(),
+            store_id: Some(1), // Default store ID for demonstration
+            role: "store".to_string(),
         }
     }
 }

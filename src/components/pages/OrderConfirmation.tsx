@@ -119,13 +119,13 @@ const OrderConfirmation: React.FC = () => {
             <CardBody>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-500">Delivery Location</p>
-                  <p className="font-semibold text-gray-900">{user?.storeLocation}</p>
+                  <p className="text-sm font-medium text-gray-500">Store ID</p>
+                  <p className="font-semibold text-gray-900">{user?.store_id || 'N/A'}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-500">Requested By</p>
-                  <p className="font-semibold text-gray-900">{user?.name}</p>
-                  <p className="text-sm text-gray-600">{user?.email}</p>
+                  <p className="font-semibold text-gray-900">{user?.email}</p>
+                  <p className="text-sm text-gray-600">Role: {user?.role}</p>
                 </div>
                 <div className="bg-blue-50 p-3 rounded-lg">
                   <div className="flex items-start space-x-2">

@@ -8,6 +8,7 @@ pub struct CategoryRecord {
     pub id: u64,
     pub name: String,
     pub description: Option<String>,
+    pub icon: Option<String>,
     pub parent_id: Option<u64>,
     pub sort_order: i32,
     pub is_active: bool,
@@ -19,6 +20,7 @@ pub struct CategoryRecord {
 pub struct CreateCategoryRequest {
     pub name: String,
     pub description: Option<String>,
+    pub icon: Option<String>,
     pub parent_id: Option<String>, // hashed ID
     pub sort_order: Option<i32>,
 }
@@ -27,6 +29,7 @@ pub struct CreateCategoryRequest {
 pub struct UpdateCategoryRequest {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub icon: Option<String>,
     pub parent_id: Option<String>, // hashed ID
     pub sort_order: Option<i32>,
     pub is_active: Option<bool>,

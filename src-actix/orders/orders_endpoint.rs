@@ -1,18 +1,24 @@
+use crate::auth::{jwt_validator, ClaimsExtractor, UserRole};
 use crate::orders::orders_data::{
     AddToCartRequest, CreateOrderRequest, StoreOrderRecord, UpdateOrderStatusRequest, UserContext,
 };
-use actix_web::{get, post, put, web, HttpResponse, Responder};
+use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Responder};
+use actix_web_httpauth::middleware::HttpAuthentication;
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use serde_json::json;
 
 #[get("")]
 pub async fn get_orders(
+    req: HttpRequest,
     connection_data: web::Data<DatabaseConnectionData>,
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
-    let user_context = UserContext::from_request(); // Stub authentication
 
-    let orders = StoreOrderRecord::get_orders_for_user(&pool, user_context.user_id).await?;
+    let claims = req.get_claims().ok_or_else(|| {
+        anyhow::anyhow!("Authentication required")
+    })?;
+
+    let orders = StoreOrderRecord::get_orders_for_user(&pool, claims.sub).await?;
 
     Ok(HttpResponse::Ok().json(json!({
         "success": true,
@@ -22,11 +28,30 @@ pub async fn get_orders(
 
 #[get("/store/{store_id}")]
 pub async fn get_store_orders(
+    req: HttpRequest,
     connection_data: web::Data<DatabaseConnectionData>,
     path: web::Path<String>,
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
     let store_id = serde_hash::hashids::decode_single(path.as_str())?;
+
+    let claims = req.get_claims().ok_or_else(|| {
+        anyhow::anyhow!("Authentication required")
+    })?;
+
+    // Only allow access if user is admin or belongs to this store
+    let role = UserRole::from_str(&claims.role)?;
+    match role {
+        UserRole::Admin => {}, // Admins can access any store
+        UserRole::Store => {
+            if claims.store_id != Some(store_id) {
+                return Ok(HttpResponse::Forbidden().json(json!({
+                    "success": false,
+                    "error": "Access denied: You can only view orders for your store"
+                })));
+            }
+        }
+    }
 
     let orders = StoreOrderRecord::get_orders_for_store(&pool, store_id).await?;
 
@@ -58,13 +83,33 @@ pub async fn get_order(
 
 #[post("")]
 pub async fn create_order(
+    req: HttpRequest,
     connection_data: web::Data<DatabaseConnectionData>,
     request: web::Json<CreateOrderRequest>,
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
-    let user_context = UserContext::from_request(); // Stub authentication
+
+    let claims = req.get_claims().ok_or_else(|| {
+        anyhow::anyhow!("Authentication required")
+    })?;
 
     let store_id = serde_hash::hashids::decode_single(&request.store_id)?;
+
+    // Store users can only create orders for their own store
+    let role = UserRole::from_str(&claims.role)?;
+    if matches!(role, UserRole::Store) && claims.store_id != Some(store_id) {
+        return Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "error": "Access denied: You can only create orders for your store"
+        })));
+    }
+
+    // Create user context from JWT claims
+    let user_context = UserContext::from_claims(
+        claims.sub,
+        claims.store_id,
+        claims.role.clone(),
+    );
 
     // Convert items to (product_id, quantity) tuples
     let mut items = Vec::new();
@@ -130,11 +175,15 @@ pub async fn update_order_status(
 
 #[post("/cart/add")]
 pub async fn add_to_cart(
+    req: HttpRequest,
     connection_data: web::Data<DatabaseConnectionData>,
     request: web::Json<AddToCartRequest>,
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
-    let user_context = UserContext::from_request(); // Stub authentication
+
+    let claims = req.get_claims().ok_or_else(|| {
+        anyhow::anyhow!("Authentication required")
+    })?;
 
     let product_id = serde_hash::hashids::decode_single(&request.product_id)?;
 
@@ -153,7 +202,8 @@ pub async fn add_to_cart(
             "message": "Product added to cart successfully",
             "data": {
                 "product_id": request.product_id,
-                "quantity": request.quantity
+                "quantity": request.quantity,
+                "user_id": serde_hash::hashids::encode_single(claims.sub)
             }
         })))
     } else {
@@ -165,8 +215,11 @@ pub async fn add_to_cart(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let auth = HttpAuthentication::bearer(jwt_validator);
+
     cfg.service(
         web::scope("/orders")
+            .wrap(auth)
             .service(get_orders)
             .service(get_store_orders)
             .service(get_order)

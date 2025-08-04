@@ -1,5 +1,6 @@
+use crate::products::products_data::{ProductFilter, ProductRecord, ProductWithCategory};
 use sqlx::{Executor, MySqlPool};
-use crate::products::products_data::{ProductRecord, ProductWithCategory, ProductFilter};
+use tokio::fs;
 
 pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
     pool.execute(
@@ -27,6 +28,7 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
         "#,
     )
     .await?;
+    fs::create_dir_all("products").await?;
 
     Ok(())
 }
@@ -74,14 +76,17 @@ impl From<ProductWithCategoryQuery> for ProductWithCategory {
 }
 
 impl ProductRecord {
-    pub async fn get_all_with_filter(pool: &MySqlPool, filter: &ProductFilter) -> anyhow::Result<Vec<ProductWithCategory>> {
+    pub async fn get_all_with_filter(
+        pool: &MySqlPool,
+        filter: &ProductFilter,
+    ) -> anyhow::Result<Vec<ProductWithCategory>> {
         let mut query = String::from(
             r#"
             SELECT p.*, c.name as category_name
             FROM `products` p
             JOIN `categories` c ON p.category_id = c.id
             WHERE p.is_active = TRUE AND c.is_active = TRUE
-            "#
+            "#,
         );
 
         let mut bind_values = Vec::new();
@@ -133,14 +138,17 @@ impl ProductRecord {
         Ok(products)
     }
 
-    pub async fn get_by_id(pool: &MySqlPool, id: u64) -> anyhow::Result<Option<ProductWithCategory>> {
+    pub async fn get_by_id(
+        pool: &MySqlPool,
+        id: u64,
+    ) -> anyhow::Result<Option<ProductWithCategory>> {
         let query_result = sqlx::query_as::<_, ProductWithCategoryQuery>(
             r#"
             SELECT p.*, c.name as category_name
             FROM `products` p
             JOIN `categories` c ON p.category_id = c.id
             WHERE p.id = ? AND p.is_active = TRUE AND c.is_active = TRUE
-            "#
+            "#,
         )
         .bind(id)
         .fetch_optional(pool)
@@ -149,7 +157,10 @@ impl ProductRecord {
         Ok(query_result.map(|q| q.into()))
     }
 
-    pub async fn get_by_category(pool: &MySqlPool, category_id: u64) -> anyhow::Result<Vec<ProductWithCategory>> {
+    pub async fn get_by_category(
+        pool: &MySqlPool,
+        category_id: u64,
+    ) -> anyhow::Result<Vec<ProductWithCategory>> {
         let query_results = sqlx::query_as::<_, ProductWithCategoryQuery>(
             r#"
             SELECT p.*, c.name as category_name
@@ -157,7 +168,7 @@ impl ProductRecord {
             JOIN `categories` c ON p.category_id = c.id
             WHERE p.category_id = ? AND p.is_active = TRUE AND c.is_active = TRUE
             ORDER BY p.name ASC
-            "#
+            "#,
         )
         .bind(category_id)
         .fetch_all(pool)
@@ -176,7 +187,7 @@ impl ProductRecord {
         category_id: u64,
         image_url: Option<&str>,
         stock_quantity: i32,
-    ) -> anyhow::Result<u64> {
+    ) -> anyhow::Result<ProductRecord> {
         let result = sqlx::query(
             r#"
             INSERT INTO `products` (`name`, `description`, `sku`, `price`, `category_id`, `image_url`, `stock_quantity`, `in_stock`)
@@ -194,23 +205,144 @@ impl ProductRecord {
         .execute(pool)
         .await?;
 
-        Ok(result.last_insert_id())
+        let product_id = result.last_insert_id();
+        ProductRecord::get_by_id_simple(pool, product_id)
+            .await?
+            .ok_or_else(|| anyhow::anyhow!("Failed to retrieve created product"))
     }
 
-    pub async fn update_stock(pool: &MySqlPool, id: u64, quantity: i32) -> anyhow::Result<bool> {
-        let result = sqlx::query(
-            r#"
-            UPDATE `products`
-            SET `stock_quantity` = ?, `in_stock` = ?
-            WHERE `id` = ?
-            "#
-        )
-        .bind(quantity)
-        .bind(quantity > 0)
-        .bind(id)
-        .execute(pool)
-        .await?;
+    pub async fn update(
+        pool: &MySqlPool,
+        id: u64,
+        name: Option<&str>,
+        description: Option<&str>,
+        sku: Option<&str>,
+        price: Option<f32>,
+        category_id: Option<u64>,
+        image_url: Option<&str>,
+        in_stock: Option<bool>,
+        stock_quantity: Option<i32>,
+        is_active: Option<bool>,
+    ) -> anyhow::Result<Option<ProductRecord>> {
+        let mut query = "UPDATE products SET ".to_string();
+        let mut updates = Vec::new();
+        let mut bind_count = 0;
+
+        if name.is_some() {
+            updates.push("name = ?");
+            bind_count += 1;
+        }
+        if description.is_some() {
+            updates.push("description = ?");
+            bind_count += 1;
+        }
+        if sku.is_some() {
+            updates.push("sku = ?");
+            bind_count += 1;
+        }
+        if price.is_some() {
+            updates.push("price = ?");
+            bind_count += 1;
+        }
+        if category_id.is_some() {
+            updates.push("category_id = ?");
+            bind_count += 1;
+        }
+        if image_url.is_some() {
+            updates.push("image_url = ?");
+            bind_count += 1;
+        }
+        if in_stock.is_some() {
+            updates.push("in_stock = ?");
+            bind_count += 1;
+        }
+        if stock_quantity.is_some() {
+            updates.push("stock_quantity = ?");
+            bind_count += 1;
+        }
+        if is_active.is_some() {
+            updates.push("is_active = ?");
+            bind_count += 1;
+        }
+
+        updates.push("updated_at = CURRENT_TIMESTAMP");
+
+        if bind_count == 0 {
+            return ProductRecord::get_by_id_simple(pool, id).await;
+        }
+
+        query.push_str(&updates.join(", "));
+        query.push_str(" WHERE id = ?");
+
+        let mut query_builder = sqlx::query(&query);
+
+        // Bind all the update values in order
+        if let Some(name_val) = name {
+            query_builder = query_builder.bind(name_val);
+        }
+        if let Some(desc_val) = description {
+            query_builder = query_builder.bind(desc_val);
+        }
+        if let Some(sku_val) = sku {
+            query_builder = query_builder.bind(sku_val);
+        }
+        if let Some(price_val) = price {
+            query_builder = query_builder.bind(price_val);
+        }
+        if let Some(cat_id_val) = category_id {
+            query_builder = query_builder.bind(cat_id_val);
+        }
+        if let Some(img_val) = image_url {
+            query_builder = query_builder.bind(img_val);
+        }
+        if let Some(stock_val) = in_stock {
+            query_builder = query_builder.bind(stock_val);
+        }
+        if let Some(qty_val) = stock_quantity {
+            query_builder = query_builder.bind(qty_val);
+        }
+        if let Some(active_val) = is_active {
+            query_builder = query_builder.bind(active_val);
+        }
+
+        // Bind the product_id for WHERE clause
+        query_builder = query_builder.bind(id);
+
+        let result = query_builder.execute(pool).await?;
+
+        if result.rows_affected() == 0 {
+            return Ok(None);
+        }
+
+        ProductRecord::get_by_id_simple(pool, id).await
+    }
+
+    pub async fn delete(pool: &MySqlPool, id: u64) -> anyhow::Result<bool> {
+        let result = sqlx::query("DELETE FROM products WHERE id = ?")
+            .bind(id)
+            .execute(pool)
+            .await?;
 
         Ok(result.rows_affected() > 0)
+    }
+
+    // Add a new function that returns just ProductRecord without category info
+    pub async fn get_by_id_simple(
+        pool: &MySqlPool,
+        id: u64,
+    ) -> anyhow::Result<Option<ProductRecord>> {
+        let product = sqlx::query_as::<_, ProductRecord>(
+            r#"
+            SELECT id, name, description, sku, price, category_id, image_url, 
+                   in_stock, stock_quantity, is_active, created_at, updated_at
+            FROM `products`
+            WHERE id = ?
+            "#,
+        )
+        .bind(id)
+        .fetch_optional(pool)
+        .await?;
+
+        Ok(product)
     }
 }

@@ -1,4 +1,4 @@
-use actix_web::{get, post, put, web, HttpResponse, Responder};
+use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use serde_json::json;
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use crate::categories::categories_data::{CategoryRecord, CreateCategoryRequest, UpdateCategoryRequest};
@@ -64,6 +64,7 @@ pub async fn create_category(
         &pool,
         &request.name,
         request.description.as_deref(),
+        request.icon.as_deref(),
         parent_id,
         request.sort_order.unwrap_or(0),
     ).await?;
@@ -98,6 +99,7 @@ pub async fn update_category(
         category_id,
         request.name.as_deref(),
         request.description.as_deref(),
+        request.icon.as_deref(),
         parent_id,
         request.sort_order,
         request.is_active,
@@ -120,6 +122,29 @@ pub async fn update_category(
     }
 }
 
+#[delete("/{id}")]
+pub async fn delete_category(
+    connection_data: web::Data<DatabaseConnectionData>,
+    path: web::Path<String>,
+) -> Result<impl Responder> {
+    let pool = connection_data.get_pool().await?;
+    let category_id = serde_hash::hashids::decode_single(path.as_str())?;
+
+    let deleted = CategoryRecord::delete(&pool, category_id).await?;
+
+    if deleted {
+        Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "message": "Category deleted successfully"
+        })))
+    } else {
+        Ok(HttpResponse::NotFound().json(json!({
+            "success": false,
+            "error": "Category not found"
+        })))
+    }
+}
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/categories")
@@ -127,6 +152,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(get_category)
             .service(create_category)
             .service(update_category)
+            .service(delete_category)
             .default_service(web::to(|| async {
                 HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
             }))

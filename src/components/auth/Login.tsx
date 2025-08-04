@@ -9,7 +9,19 @@ const Login: React.FC = () =>
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
-    const {login, isAuthenticated} = useAuth();
+    const {login, isAuthenticated, isLoading: authLoading} = useAuth();
+
+    if (authLoading)
+    {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+                <div className="text-center">
+                    <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-gray-600">Loading...</p>
+                </div>
+            </div>
+        );
+    }
 
     if (isAuthenticated)
     {
@@ -22,16 +34,25 @@ const Login: React.FC = () =>
         setIsLoading(true);
         setError("");
 
+        // Validate email domain
+        if (!email.endsWith("@mardens.com"))
+        {
+            setError("Please use your @mardens.com email address.");
+            setIsLoading(false);
+            return;
+        }
+
         try
         {
             const success = await login(email, password);
             if (!success)
             {
-                setError("Invalid credentials. Please try again.");
+                setError("Invalid credentials. Please check your email and password.");
             }
         } catch (err)
         {
-            setError("An error occurred. Please try again.");
+            console.error("Login error:", err);
+            setError("An error occurred during login. Please try again.");
         } finally
         {
             setIsLoading(false);
@@ -56,11 +77,12 @@ const Login: React.FC = () =>
                         <Input
                             type="email"
                             label="Email"
-                            placeholder="Enter your email"
+                            placeholder="your.name@mardens.com"
                             value={email}
                             onValueChange={setEmail}
                             isRequired
                             variant="bordered"
+                            description="Use your @mardens.com email address"
                             classNames={{
                                 input: "text-sm",
                                 label: "text-sm font-medium"
@@ -82,7 +104,9 @@ const Login: React.FC = () =>
                         />
 
                         {error && (
-                            <div className="text-red-500 text-sm text-center">{error}</div>
+                            <div className="p-3 rounded-md bg-red-50 border border-red-200 w-full">
+                                <div className="text-red-700 text-sm">{error}</div>
+                            </div>
                         )}
 
                         <Button
@@ -91,15 +115,18 @@ const Login: React.FC = () =>
                             size="lg"
                             className="w-full"
                             isLoading={isLoading}
-                            isDisabled={!email || !password}
+                            isDisabled={!email || !password || isLoading}
                         >
                             {isLoading ? "Signing in..." : "Sign In"}
                         </Button>
                     </Form>
 
                     <div className="mt-6 text-center">
-                        <p className="text-xs text-gray-500">
-                            For demo purposes, enter any email and password to continue
+                        <p className="text-xs text-gray-500 mb-2">
+                            Need help accessing your account?
+                        </p>
+                        <p className="text-xs text-gray-400">
+                            Contact your system administrator
                         </p>
                     </div>
                 </CardBody>

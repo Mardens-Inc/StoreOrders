@@ -8,6 +8,7 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
             `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
             `name` VARCHAR(255) NOT NULL,
             `description` TEXT,
+            `icon` VARCHAR(255),
             `parent_id` BIGINT UNSIGNED,
             `sort_order` INT NOT NULL DEFAULT 0,
             `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
@@ -88,17 +89,19 @@ impl CategoryRecord {
         pool: &MySqlPool,
         name: &str,
         description: Option<&str>,
+        icon: Option<&str>,
         parent_id: Option<u64>,
         sort_order: i32,
     ) -> anyhow::Result<u64> {
         let result = sqlx::query(
             r#"
-            INSERT INTO `categories` (`name`, `description`, `parent_id`, `sort_order`)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO `categories` (`name`, `description`, `icon`, `parent_id`, `sort_order`)
+            VALUES (?, ?, ?, ?, ?)
             "#
         )
         .bind(name)
         .bind(description)
+        .bind(icon)
         .bind(parent_id)
         .bind(sort_order)
         .execute(pool)
@@ -112,32 +115,37 @@ impl CategoryRecord {
         id: u64,
         name: Option<&str>,
         description: Option<&str>,
+        icon: Option<&str>,
         parent_id: Option<u64>,
         sort_order: Option<i32>,
         is_active: Option<bool>,
     ) -> anyhow::Result<bool> {
         let mut query_parts = Vec::new();
-        let mut values: Vec<Box<dyn sqlx::Encode<'_, sqlx::MySql> + Send + Sync>> = Vec::new();
+        let mut bind_values: Vec<String> = Vec::new();
 
         if let Some(n) = name {
             query_parts.push("`name` = ?");
-            values.push(Box::new(n.to_string()));
+            bind_values.push(n.to_string());
         }
         if let Some(d) = description {
             query_parts.push("`description` = ?");
-            values.push(Box::new(d.to_string()));
+            bind_values.push(d.to_string());
+        }
+        if let Some(i) = icon {
+            query_parts.push("`icon` = ?");
+            bind_values.push(i.to_string());
         }
         if let Some(pid) = parent_id {
             query_parts.push("`parent_id` = ?");
-            values.push(Box::new(pid));
+            bind_values.push(pid.to_string());
         }
         if let Some(so) = sort_order {
             query_parts.push("`sort_order` = ?");
-            values.push(Box::new(so));
+            bind_values.push(so.to_string());
         }
         if let Some(active) = is_active {
             query_parts.push("`is_active` = ?");
-            values.push(Box::new(active));
+            bind_values.push(active.to_string());
         }
 
         if query_parts.is_empty() {
@@ -150,12 +158,25 @@ impl CategoryRecord {
         );
 
         let mut query = sqlx::query(&query_str);
-        for value in values {
-            // Note: This is a simplified approach. In practice, you'd want to handle this more elegantly
+        for value in &bind_values {
+            query = query.bind(value);
         }
         query = query.bind(id);
 
         let result = query.execute(pool).await?;
+        Ok(result.rows_affected() > 0)
+    }
+
+    pub async fn delete(pool: &MySqlPool, id: u64) -> anyhow::Result<bool> {
+        let result = sqlx::query(
+            r#"
+            UPDATE `categories` SET `is_active` = FALSE WHERE `id` = ?
+            "#
+        )
+        .bind(id)
+        .execute(pool)
+        .await?;
+
         Ok(result.rows_affected() > 0)
     }
 }

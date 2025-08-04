@@ -10,7 +10,8 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  Avatar
+  Avatar,
+  Chip
 } from '@heroui/react';
 import { Icon } from '@iconify-icon/react';
 import { useAuth } from '../../providers/AuthProvider';
@@ -22,6 +23,26 @@ const Header: React.FC = () => {
 
   const handleLogout = () => {
     logout();
+  };
+
+  const getUserDisplayName = () => {
+    if (!user) return '';
+    // Extract name from email (e.g., "john.doe@mardens.com" -> "John Doe")
+    const emailPart = user.email.split('@')[0];
+    return emailPart.split('.').map(part =>
+      part.charAt(0).toUpperCase() + part.slice(1)
+    ).join(' ');
+  };
+
+  const getRoleColor = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return 'danger';
+      case 'store':
+        return 'primary';
+      default:
+        return 'default';
+    }
   };
 
   return (
@@ -77,16 +98,39 @@ const Header: React.FC = () => {
         <NavbarItem>
           <Dropdown>
             <DropdownTrigger>
-              <Avatar
-                name={user?.name}
-                size="sm"
-                className="cursor-pointer bg-blue-500 text-white"
-              />
+              <div className="flex items-center gap-2 cursor-pointer">
+                <Avatar
+                  name={getUserDisplayName()}
+                  size="sm"
+                  className="bg-blue-500 text-white"
+                />
+                <div className="hidden md:flex flex-col items-start">
+                  <span className="text-sm font-medium">{getUserDisplayName()}</span>
+                  <Chip
+                    size="sm"
+                    color={getRoleColor(user?.role || '')}
+                    variant="flat"
+                    className="text-xs"
+                  >
+                    {user?.role === 'admin' ? 'Administrator' : 'Store User'}
+                  </Chip>
+                </div>
+              </div>
             </DropdownTrigger>
             <DropdownMenu aria-label="User menu">
               <DropdownItem key="profile" className="h-14 gap-2">
-                <p className="font-semibold">Signed in as</p>
-                <p className="font-semibold">{user?.email}</p>
+                <div className="flex flex-col">
+                  <p className="font-semibold">{getUserDisplayName()}</p>
+                  <p className="text-small text-gray-500">{user?.email}</p>
+                  <Chip
+                    size="sm"
+                    color={getRoleColor(user?.role || '')}
+                    variant="flat"
+                    className="w-fit mt-1"
+                  >
+                    {user?.role === 'admin' ? 'Administrator' : 'Store User'}
+                  </Chip>
+                </div>
               </DropdownItem>
               <DropdownItem key="settings" startContent={<Icon icon="lucide:settings" />}>
                 Settings

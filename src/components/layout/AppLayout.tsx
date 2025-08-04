@@ -9,6 +9,8 @@ import Products from '../pages/Products';
 import Cart from '../pages/Cart';
 import Orders from '../pages/Orders';
 import OrderConfirmation from '../pages/OrderConfirmation';
+import UserManagement from '../pages/UserManagement';
+import ProductManagement from '../pages/ProductManagement';
 import CartSidebar from '../cart/CartSidebar';
 
 const AppLayout: React.FC = () => {
@@ -37,6 +39,8 @@ const AppLayout: React.FC = () => {
             <Route path="/cart" element={<Cart />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/order-confirmation/:orderId" element={<OrderConfirmation />} />
+            <Route path="/admin/user-management" element={<UserManagement />} />
+            <Route path="/admin/product-management" element={<ProductManagement />} />
           </Routes>
         </main>
       </div>
