@@ -1,0 +1,19 @@
+meta {
+  name: Get category by ID
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/categories/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

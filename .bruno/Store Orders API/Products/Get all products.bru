@@ -1,0 +1,21 @@
+meta {
+  name: Get all products
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/products
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~category_id: 
+  ~in_stock: 
+  ~is_active: 
+}
+
+auth:bearer {
+  token: {{token}}
+}

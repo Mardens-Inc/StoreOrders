@@ -1,0 +1,33 @@
+meta {
+  name: Update product
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/products/:id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "description": "",
+    "sku": "",
+    "price": "",
+    "category_id": "",
+    "image_url": "",
+    "in_stock": "",
+    "stock_quantity": "",
+    "is_active": ""
+  }
+}

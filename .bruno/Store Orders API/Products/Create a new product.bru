@@ -1,0 +1,27 @@
+meta {
+  name: Create a new product
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/products
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "name": "",
+    "description": "",
+    "sku": "",
+    "price": "",
+    "category_id": "",
+    "image_url": "",
+    "stock_quantity": ""
+  }
+}

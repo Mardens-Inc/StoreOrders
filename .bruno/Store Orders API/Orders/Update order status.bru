@@ -1,0 +1,26 @@
+meta {
+  name: Update order status
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/orders/:id/status
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "status": "",
+    "notes": ""
+  }
+}
