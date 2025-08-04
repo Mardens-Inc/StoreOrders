@@ -4,19 +4,17 @@ import ReactDOM from "react-dom/client";
 import $ from "jquery";
 
 import "./assets/css/index.css";
-import Home from "./assets/pages/Home.tsx";
-import About from "./assets/pages/About.tsx";
-import Navigation from "./assets/components/Navigation.tsx";
-import {ThemeProvider} from "./assets/providers/ThemeProvider.tsx";
+import Login from "./components/auth/Login";
+import AppLayout from "./components/layout/AppLayout";
 import {HeroUIProvider} from "@heroui/react";
+import {AuthProvider} from "./providers/AuthProvider";
+import {CartProvider} from "./providers/CartProvider";
 
 
 ReactDOM.createRoot($("#root")[0]!).render(
     <React.StrictMode>
         <BrowserRouter>
-            <ThemeProvider>
-                <MainContentRenderer/>
-            </ThemeProvider>
+            <MainContentRenderer/>
         </BrowserRouter>
     </React.StrictMode>
 );
@@ -26,13 +24,14 @@ export function MainContentRenderer()
     const navigate = useNavigate();
     return (
         <HeroUIProvider navigate={navigate}>
-            <Navigation/>
-            <Routes>
-                <Route>
-                    <Route path="/" element={<Home/>}/>
-                    <Route path="/about" element={<About/>}/>
-                </Route>
-            </Routes>
+            <AuthProvider>
+                <CartProvider>
+                    <Routes>
+                        <Route path="/" element={<Login/>}/>
+                        <Route path="/app/*" element={<AppLayout/>}/>
+                    </Routes>
+                </CartProvider>
+            </AuthProvider>
         </HeroUIProvider>
     );
 }
