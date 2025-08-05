@@ -1,8 +1,9 @@
-import React, {useMemo, useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {useNavigate, useParams} from "react-router-dom";
-import {Button, ButtonGroup, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem} from "@heroui/react";
+import {Button, ButtonGroup, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
+import {productsApi} from "../../utils/api";
 
 const Products: React.FC = () =>
 {
@@ -12,70 +13,9 @@ const Products: React.FC = () =>
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-
-    // Mock products data - in real app this would come from API
-    const mockProducts: Product[] = [
-        {
-            id: "1",
-            name: "Premium Ballpoint Pens (Pack of 12)",
-            description: "High-quality ballpoint pens with smooth ink flow. Perfect for everyday office use.",
-            price: 8.99,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: true,
-            sku: "PEN-BP-12"
-        },
-        {
-            id: "2",
-            name: "Copy Paper (500 sheets)",
-            description: "Standard white copy paper, 20lb weight. Compatible with all printers and copiers.",
-            price: 12.49,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: true,
-            sku: "PAPER-COPY-500"
-        },
-        {
-            id: "3",
-            name: "Sticky Notes Variety Pack",
-            description: "Assorted colors and sizes of sticky notes. Great for reminders and organization.",
-            price: 6.75,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: true,
-            sku: "STICKY-VAR-PACK"
-        },
-        {
-            id: "4",
-            name: "Desktop Stapler",
-            description: "Heavy-duty desktop stapler with ergonomic design. Includes 1000 staples.",
-            price: 24.99,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: false,
-            sku: "STAPLER-DESK-HD"
-        },
-        {
-            id: "5",
-            name: "File Folders (25 pack)",
-            description: "Manila file folders with reinforced tabs. Perfect for document organization.",
-            price: 15.99,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: true,
-            sku: "FOLDER-MAN-25"
-        },
-        {
-            id: "6",
-            name: "Highlighter Set (4 colors)",
-            description: "Fluorescent highlighters in yellow, pink, blue, and green. Chisel tip design.",
-            price: 9.49,
-            category: categoryId || "office-supplies",
-            imageUrl: "/api/placeholder/300/300",
-            inStock: true,
-            sku: "HIGH-SET-4"
-        }
-    ];
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const categoryNames: { [key: string]: string } = {
         "office-supplies": "Office Supplies",
@@ -88,9 +28,55 @@ const Products: React.FC = () =>
         "maintenance": "Maintenance"
     };
 
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                let response;
+                if (categoryId) {
+                    // Fetch products by category if categoryId is provided
+                    response = await productsApi.getProductsByCategory(categoryId);
+                } else {
+                    // Fetch all products with optional filters
+                    const filters = {
+                        search: searchTerm || undefined,
+                        limit: 100, // Reasonable limit for display
+                    };
+                    response = await productsApi.getProducts(filters);
+                }
+
+                if (response.success && response.data) {
+                    // Transform API response to match Product interface
+                    const transformedProducts: Product[] = response.data.map((apiProduct: any) => ({
+                        id: apiProduct.id,
+                        name: apiProduct.name,
+                        description: apiProduct.description,
+                        price: apiProduct.price,
+                        category_id: apiProduct.category_id,
+                        imageUrl: apiProduct.image_url || "/api/placeholder/300/300",
+                        inStock: apiProduct.in_stock,
+                        sku: apiProduct.sku,
+                    }));
+                    setProducts(transformedProducts);
+                } else {
+                    setError("Failed to load products");
+                }
+            } catch (err) {
+                console.error("Error fetching products:", err);
+                setError("Failed to load products. Please try again.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProducts();
+    }, [categoryId, searchTerm]); // Re-fetch when category or search changes
+
     const filteredAndSortedProducts = useMemo(() =>
     {
-        let filtered = mockProducts.filter(product =>
+        let filtered = products.filter(product =>
             product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             product.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
             product.sku.toLowerCase().includes(searchTerm.toLowerCase())
@@ -111,12 +97,40 @@ const Products: React.FC = () =>
         }
 
         return filtered;
-    }, [mockProducts, searchTerm, sortBy]);
+    }, [products, searchTerm, sortBy]);
 
     const handleAddToCart = (product: Product) =>
     {
         addToCart(product);
     };
+
+    if (loading) {
+        return (
+            <div className="p-6 flex justify-center items-center min-h-64">
+                <Spinner size="lg" />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="p-6">
+                <Card className="max-w-md mx-auto">
+                    <CardBody className="text-center py-8">
+                        <Icon icon="lucide:alert-circle" className="w-16 h-16 text-red-500 mx-auto mb-4"/>
+                        <h2 className="text-xl font-semibold mb-2">Error Loading Products</h2>
+                        <p className="text-gray-600 mb-4">{error}</p>
+                        <Button 
+                            color="primary" 
+                            onPress={() => window.location.reload()}
+                        >
+                            Try Again
+                        </Button>
+                    </CardBody>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="p-6">
@@ -205,7 +219,15 @@ const Products: React.FC = () =>
                             <>
                                 <CardHeader className="p-0">
                                     <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
-                                        <Icon icon="lucide:package" className="w-16 h-16 text-gray-400"/>
+                                        {product.imageUrl && product.imageUrl !== "/api/placeholder/300/300" ? (
+                                            <img 
+                                                src={product.imageUrl} 
+                                                alt={product.name}
+                                                className="w-full h-full object-cover rounded-t-lg"
+                                            />
+                                        ) : (
+                                            <Icon icon="lucide:package" className="w-16 h-16 text-gray-400"/>
+                                        )}
                                     </div>
                                 </CardHeader>
                                 <CardBody className="p-4">
@@ -244,7 +266,15 @@ const Products: React.FC = () =>
                             <CardBody className="p-4">
                                 <div className="flex items-center space-x-4">
                                     <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        <Icon icon="lucide:package" className="w-8 h-8 text-gray-400"/>
+                                        {product.imageUrl && product.imageUrl !== "/api/placeholder/300/300" ? (
+                                            <img 
+                                                src={product.imageUrl} 
+                                                alt={product.name}
+                                                className="w-full h-full object-cover rounded-lg"
+                                            />
+                                        ) : (
+                                            <Icon icon="lucide:package" className="w-8 h-8 text-gray-400"/>
+                                        )}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <h3 className="font-semibold text-gray-900 mb-1">
@@ -283,7 +313,7 @@ const Products: React.FC = () =>
             </div>
 
             {/* No Results */}
-            {filteredAndSortedProducts.length === 0 && (
+            {filteredAndSortedProducts.length === 0 && !loading && (
                 <div className="text-center py-12">
                     <Icon icon="lucide:package-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>

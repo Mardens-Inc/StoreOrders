@@ -5,7 +5,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  category: string;
+  category_id: string; // Changed from number to string to match API response
   imageUrl: string;
   inStock: boolean;
   sku: string;

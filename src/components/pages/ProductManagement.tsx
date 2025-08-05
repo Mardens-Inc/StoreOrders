@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Button, Card, CardBody, CardHeader, Chip, Image, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Image, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {apiClient, categoriesApi} from "../../utils/api";
@@ -374,12 +374,15 @@ const ProductManagement: React.FC = () =>
     };
 
     // Category management functions
-    const handleCreateCategory = async () => {
-        try {
+    const handleCreateCategory = async () =>
+    {
+        try
+        {
             setActionLoading(true);
             const response = await categoriesApi.createCategory(categoryFormData);
 
-            if (response.success) {
+            if (response.success)
+            {
                 await loadData();
                 onCreateCategoryOpenChange();
                 setCategoryFormData({
@@ -388,17 +391,21 @@ const ProductManagement: React.FC = () =>
                     icon: ""
                 });
             }
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Failed to create category:", error);
-        } finally {
+        } finally
+        {
             setActionLoading(false);
         }
     };
 
-    const handleUpdateCategory = async () => {
+    const handleUpdateCategory = async () =>
+    {
         if (!selectedCategory) return;
 
-        try {
+        try
+        {
             setActionLoading(true);
             const updateData: UpdateCategoryRequest = {
                 name: categoryFormData.name || undefined,
@@ -408,38 +415,47 @@ const ProductManagement: React.FC = () =>
 
             const response = await categoriesApi.updateCategory(selectedCategory.id, updateData);
 
-            if (response.success) {
+            if (response.success)
+            {
                 await loadData();
                 onEditCategoryOpenChange();
                 setSelectedCategory(null);
             }
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Failed to update category:", error);
-        } finally {
+        } finally
+        {
             setActionLoading(false);
         }
     };
 
-    const handleDeleteCategory = async () => {
+    const handleDeleteCategory = async () =>
+    {
         if (!selectedCategory) return;
 
-        try {
+        try
+        {
             setActionLoading(true);
             const response = await categoriesApi.deleteCategory(selectedCategory.id);
 
-            if (response.success) {
+            if (response.success)
+            {
                 await loadData();
                 onDeleteCategoryOpenChange();
                 setSelectedCategory(null);
             }
-        } catch (error) {
+        } catch (error)
+        {
             console.error("Failed to delete category:", error);
-        } finally {
+        } finally
+        {
             setActionLoading(false);
         }
     };
 
-    const openEditCategoryModal = (category: Category) => {
+    const openEditCategoryModal = (category: Category) =>
+    {
         setSelectedCategory(category);
         setCategoryFormData({
             name: category.name,
@@ -449,7 +465,8 @@ const ProductManagement: React.FC = () =>
         onEditCategoryOpen();
     };
 
-    const openDeleteCategoryModal = (category: Category) => {
+    const openDeleteCategoryModal = (category: Category) =>
+    {
         setSelectedCategory(category);
         onDeleteCategoryOpen();
     };
@@ -472,22 +489,22 @@ const ProductManagement: React.FC = () =>
 
     // Available icons for categories
     const availableIcons = [
-        { value: "lucide:briefcase", label: "Office Supplies", icon: "lucide:briefcase" },
-        { value: "lucide:spray-can", label: "Cleaning Supplies", icon: "lucide:spray-can" },
-        { value: "lucide:coffee", label: "Break Room", icon: "lucide:coffee" },
-        { value: "lucide:file-text", label: "Paper Products", icon: "lucide:file-text" },
-        { value: "lucide:laptop", label: "Technology", icon: "lucide:laptop" },
-        { value: "lucide:armchair", label: "Furniture", icon: "lucide:armchair" },
-        { value: "lucide:shield", label: "Safety Equipment", icon: "lucide:shield" },
-        { value: "lucide:wrench", label: "Maintenance", icon: "lucide:wrench" },
-        { value: "lucide:package", label: "General Products", icon: "lucide:package" },
-        { value: "lucide:shopping-cart", label: "Shopping", icon: "lucide:shopping-cart" },
-        { value: "lucide:tool-case", label: "Tools", icon: "lucide:tool-case" },
-        { value: "lucide:car", label: "Automotive", icon: "lucide:car" },
-        { value: "lucide:home", label: "Home & Garden", icon: "lucide:home" },
-        { value: "lucide:shirt", label: "Clothing", icon: "lucide:shirt" },
-        { value: "lucide:utensils", label: "Food & Beverage", icon: "lucide:utensils" },
-        { value: "lucide:gamepad-2", label: "Electronics", icon: "lucide:gamepad-2" }
+        {value: "lucide:briefcase", label: "Office Supplies", icon: "lucide:briefcase"},
+        {value: "lucide:spray-can", label: "Cleaning Supplies", icon: "lucide:spray-can"},
+        {value: "lucide:coffee", label: "Break Room", icon: "lucide:coffee"},
+        {value: "lucide:file-text", label: "Paper Products", icon: "lucide:file-text"},
+        {value: "lucide:laptop", label: "Technology", icon: "lucide:laptop"},
+        {value: "lucide:armchair", label: "Furniture", icon: "lucide:armchair"},
+        {value: "lucide:shield", label: "Safety Equipment", icon: "lucide:shield"},
+        {value: "lucide:wrench", label: "Maintenance", icon: "lucide:wrench"},
+        {value: "lucide:package", label: "General Products", icon: "lucide:package"},
+        {value: "lucide:shopping-cart", label: "Shopping", icon: "lucide:shopping-cart"},
+        {value: "lucide:tool-case", label: "Tools", icon: "lucide:tool-case"},
+        {value: "lucide:car", label: "Automotive", icon: "lucide:car"},
+        {value: "lucide:home", label: "Home & Garden", icon: "lucide:home"},
+        {value: "lucide:shirt", label: "Clothing", icon: "lucide:shirt"},
+        {value: "lucide:utensils", label: "Food & Beverage", icon: "lucide:utensils"},
+        {value: "lucide:gamepad-2", label: "Electronics", icon: "lucide:gamepad-2"}
     ];
 
     return (
@@ -518,25 +535,26 @@ const ProductManagement: React.FC = () =>
                     ) : (
                         <Table aria-label="Products table" removeWrapper>
                             <TableHeader>
-                                <TableColumn>IMAGE</TableColumn>
+                                <TableColumn width={64}>IMAGE</TableColumn>
                                 <TableColumn>NAME</TableColumn>
                                 <TableColumn>SKU</TableColumn>
                                 <TableColumn>PRICE</TableColumn>
                                 <TableColumn>CATEGORY</TableColumn>
                                 <TableColumn>STOCK</TableColumn>
                                 <TableColumn>STATUS</TableColumn>
-                                <TableColumn>ACTIONS</TableColumn>
+                                <TableColumn width={64} hideHeader>ACTIONS</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {products.map((product) => (
                                     <TableRow key={product.id}>
                                         <TableCell>
-                                            <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                            <div className="w-[5rem] h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                                 {product.image_url ? (
                                                     <Image
                                                         src={product.image_url}
                                                         alt={product.name}
                                                         className="w-full h-full object-cover"
+                                                        radius={"md"}
                                                     />
                                                 ) : (
                                                     <Icon icon="lucide:image" className="w-6 h-6 text-gray-400"/>
@@ -567,42 +585,50 @@ const ProductManagement: React.FC = () =>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="primary"
-                                                    isIconOnly
-                                                    onPress={() => openEditModal(product)}
-                                                >
-                                                    <Icon icon="lucide:edit" className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color={product.in_stock ? "danger" : "success"}
-                                                    isIconOnly
-                                                    onPress={() => handleToggleStock(product)}
-                                                >
-                                                    <Icon icon={product.in_stock ? "lucide:package-x" : "lucide:package-check"} className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color={product.is_active ? "warning" : "success"}
-                                                    isIconOnly
-                                                    onPress={() => handleToggleActive(product)}
-                                                >
-                                                    <Icon icon={product.is_active ? "lucide:eye-off" : "lucide:eye"} className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="danger"
-                                                    isIconOnly
-                                                    onPress={() => openDeleteModal(product)}
-                                                >
-                                                    <Icon icon="lucide:trash" className="w-4 h-4"/>
-                                                </Button>
+                                                <Tooltip content={"Edit Product"}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="primary"
+                                                        isIconOnly
+                                                        onPress={() => openEditModal(product)}
+                                                    >
+                                                        <Icon icon="lucide:edit" className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip content={product.in_stock ? "Mark as Out of Stock" : "Mark as In Stock"}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color={product.in_stock ? "danger" : "success"}
+                                                        isIconOnly
+                                                        onPress={() => handleToggleStock(product)}
+                                                    >
+                                                        <Icon icon={product.in_stock ? "lucide:package-x" : "lucide:package-check"} className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip content={product.is_active ? "Deactivate Product" : "Activate Product"}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color={product.is_active ? "warning" : "success"}
+                                                        isIconOnly
+                                                        onPress={() => handleToggleActive(product)}
+                                                    >
+                                                        <Icon icon={product.is_active ? "lucide:eye-off" : "lucide:eye"} className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip content={"Delete Product"}>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="danger"
+                                                        isIconOnly
+                                                        onPress={() => openDeleteModal(product)}
+                                                    >
+                                                        <Icon icon="lucide:trash" className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>

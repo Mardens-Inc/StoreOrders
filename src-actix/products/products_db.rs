@@ -1,4 +1,5 @@
 use crate::products::products_data::{ProductFilter, ProductRecord, ProductWithCategory};
+use rust_decimal::Decimal;
 use sqlx::{Executor, MySqlPool};
 use tokio::fs;
 
@@ -41,7 +42,7 @@ struct ProductWithCategoryQuery {
     name: String,
     description: String,
     sku: String,
-    price: f32,
+    price: Decimal,
     category_id: u64,
     image_url: Option<String>,
     in_stock: bool,
@@ -183,7 +184,7 @@ impl ProductRecord {
         name: &str,
         description: &str,
         sku: &str,
-        price: f32,
+        price: Decimal,
         category_id: u64,
         image_url: Option<&str>,
         stock_quantity: i32,
@@ -217,7 +218,7 @@ impl ProductRecord {
         name: Option<&str>,
         description: Option<&str>,
         sku: Option<&str>,
-        price: Option<f32>,
+        price: Option<Decimal>,
         category_id: Option<u64>,
         image_url: Option<&str>,
         in_stock: Option<bool>,
