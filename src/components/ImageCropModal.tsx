@@ -2,7 +2,7 @@ import {createRef, useEffect, useState} from "react";
 import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@heroui/react";
 import Cropper, {ReactCropperElement} from "react-cropper";
 import {resizeImage} from "../utils/image-resizer";
-import "../assets/css/cropper.min.css";
+import "../css/cropper.min.css";
 
 interface ImageCropModalProps
 {

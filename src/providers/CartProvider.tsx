@@ -4,11 +4,16 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  price: number;
-  category_id: string; // Changed from number to string to match API response
+  category_id: string;
   imageUrl: string;
-  inStock: boolean;
   sku: string;
+  price: number;
+  in_stock: boolean;
+  stock_quantity: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  image_url?: string;
 }
 
 export interface CartItem {
@@ -49,14 +54,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const addToCart = (product: Product, quantity = 1) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.product.id === product.id);
+
       if (existingItem) {
         return prevItems.map(item =>
           item.product.id === product.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
+      } else {
+        return [...prevItems, { product, quantity }];
       }
-      return [...prevItems, { product, quantity }];
     });
   };
 
@@ -69,6 +76,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       removeFromCart(productId);
       return;
     }
+
     setItems(prevItems =>
       prevItems.map(item =>
         item.product.id === productId
@@ -90,7 +98,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     return items.reduce((total, item) => total + (item.product.price * item.quantity), 0);
   };
 
-  const value = {
+  const value: CartContextType = {
     items,
     addToCart,
     removeFromCart,
@@ -99,7 +107,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     getTotalItems,
     getTotalPrice,
     isOpen,
-    setIsOpen
+    setIsOpen,
   };
 
   return (

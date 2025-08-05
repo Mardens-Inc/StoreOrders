@@ -86,10 +86,8 @@ pub async fn create_product(
         &request.name,
         &request.description,
         &request.sku,
-        request.price,
         category_id,
         request.image_url.as_deref(),
-        request.stock_quantity,
     ).await?;
 
     Ok(HttpResponse::Created().json(json!({
@@ -119,7 +117,7 @@ pub async fn update_product(
     }
 
     let pool = connection_data.get_pool().await?;
-    let product_id = serde_hash::hashids::decode_single(&path.as_str())?;
+    let product_id = serde_hash::hashids::decode_single(path.as_str())?;
 
     // Decode category_id if provided
     let category_id = if let Some(category_id_str) = &request.category_id {
@@ -134,11 +132,8 @@ pub async fn update_product(
         request.name.as_deref(),
         request.description.as_deref(),
         request.sku.as_deref(),
-        request.price,
         category_id,
         request.image_url.as_deref(),
-        request.in_stock,
-        request.stock_quantity,
         request.is_active,
     ).await? {
         Some(product) => Ok(HttpResponse::Ok().json(json!({
@@ -171,7 +166,7 @@ pub async fn delete_product(
     }
 
     let pool = connection_data.get_pool().await?;
-    let product_id = serde_hash::hashids::decode_single(&path.as_str())?;
+    let product_id = serde_hash::hashids::decode_single(path.as_str())?;
 
     let deleted = ProductRecord::delete(&pool, product_id).await?;
 

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react";
 import {Button, Card, CardBody, CardHeader, Chip, Image, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
-import {apiClient, categoriesApi} from "../../utils/api";
+import {categoriesApi, productsApi} from "../../utils/api";
 import ImageCropModal from "../ImageCropModal";
 import CreateProductModal from "../modals/CreateProductModal";
 import EditProductModal from "../modals/EditProductModal";
@@ -10,22 +10,7 @@ import DeleteProductModal from "../modals/DeleteProductModal";
 import CreateCategoryModal from "../modals/CreateCategoryModal";
 import EditCategoryModal from "../modals/EditCategoryModal";
 import DeleteCategoryModal from "../modals/DeleteCategoryModal";
-
-interface Product
-{
-    id: string;
-    name: string;
-    description: string;
-    sku: string;
-    price: number;
-    category_id: string;
-    image_url?: string;
-    in_stock: boolean;
-    stock_quantity: number;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
+import {Product} from "../../providers/CartProvider";
 
 interface Category
 {
@@ -40,10 +25,8 @@ interface CreateProductRequest
     name: string;
     description: string;
     sku: string;
-    price: number;
     category_id: string;
     image_url?: string;
-    stock_quantity: number;
 }
 
 interface UpdateProductRequest
@@ -51,11 +34,8 @@ interface UpdateProductRequest
     name?: string;
     description?: string;
     sku?: string;
-    price?: number;
     category_id?: string;
     image_url?: string;
-    in_stock?: boolean;
-    stock_quantity?: number;
     is_active?: boolean;
 }
 
@@ -94,10 +74,8 @@ const ProductManagement: React.FC = () =>
         name: "",
         description: "",
         sku: "",
-        price: 0,
         category_id: "",
-        image_url: "",
-        stock_quantity: 0
+        image_url: ""
     });
 
     // Image upload state
@@ -126,7 +104,7 @@ const ProductManagement: React.FC = () =>
         {
             setLoading(true);
             const [productsResponse, categoriesResponse] = await Promise.all([
-                apiClient.get<{ success: boolean, data: Product[] }>("/products"),
+                productsApi.getProducts(),
                 categoriesApi.getCategories()
             ]);
 
@@ -153,7 +131,7 @@ const ProductManagement: React.FC = () =>
         try
         {
             setActionLoading(true);
-            const response = await apiClient.post("/products/admin", formData) as any;
+            const response = await productsApi.createProduct(formData as CreateProductRequest);
 
             if (response.success)
             {
@@ -163,10 +141,8 @@ const ProductManagement: React.FC = () =>
                     name: "",
                     description: "",
                     sku: "",
-                    price: 0,
                     category_id: "",
-                    image_url: "",
-                    stock_quantity: 0
+                    image_url: ""
                 });
             }
         } catch (error)
@@ -189,15 +165,11 @@ const ProductManagement: React.FC = () =>
                 name: formData.name || undefined,
                 description: formData.description || undefined,
                 sku: formData.sku || undefined,
-                price: formData.price || undefined,
                 category_id: formData.category_id || undefined,
                 image_url: formData.image_url || undefined,
-                stock_quantity: formData.stock_quantity || undefined,
-                in_stock: formData.stock_quantity > 0,
                 is_active: true
             };
-
-            const response = await apiClient.put(`/products/${selectedProduct.id}`, updateData) as any;
+            const response = await productsApi.updateProduct(selectedProduct.id, updateData);
 
             if (response.success)
             {
@@ -221,7 +193,8 @@ const ProductManagement: React.FC = () =>
         try
         {
             setActionLoading(true);
-            const response = await apiClient.delete(`/products/${selectedProduct.id}`) as any;
+            const response = await productsApi.deleteProduct(selectedProduct.id);
+
 
             if (response.success)
             {
@@ -238,27 +211,6 @@ const ProductManagement: React.FC = () =>
         }
     };
 
-    const handleToggleStock = async (product: Product) =>
-    {
-        try
-        {
-            const updateData = {
-                in_stock: !product.in_stock,
-                stock_quantity: !product.in_stock ? 1 : 0
-            };
-
-            const response = await apiClient.put(`/products/${product.id}`, updateData) as any;
-
-            if (response.success)
-            {
-                await loadData();
-            }
-        } catch (error)
-        {
-            console.error("Failed to toggle stock:", error);
-        }
-    };
-
     const handleToggleActive = async (product: Product) =>
     {
         try
@@ -267,7 +219,7 @@ const ProductManagement: React.FC = () =>
                 is_active: !product.is_active
             };
 
-            const response = await apiClient.put(`/products/${product.id}`, updateData) as any;
+            const response = await productsApi.updateProduct(product.id, updateData) as any;
 
             if (response.success)
             {
@@ -286,10 +238,8 @@ const ProductManagement: React.FC = () =>
             name: product.name,
             description: product.description,
             sku: product.sku,
-            price: product.price,
             category_id: product.category_id,
-            image_url: product.image_url || "",
-            stock_quantity: product.stock_quantity
+            image_url: product.image_url || ""
         });
         onEditOpen();
     };
@@ -304,11 +254,6 @@ const ProductManagement: React.FC = () =>
     {
         const category = categories.find(c => c.id === categoryId);
         return category ? category.name : "Unknown Category";
-    };
-
-    const getStockStatusColor = (inStock: boolean) =>
-    {
-        return inStock ? "success" : "danger";
     };
 
     const getActiveStatusColor = (isActive: boolean) =>
@@ -512,7 +457,7 @@ const ProductManagement: React.FC = () =>
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Product Management</h1>
-                    <p className="text-gray-600">Manage products, inventory, and pricing</p>
+                    <p className="text-gray-600">Manage products and inventory</p>
                 </div>
                 <Button
                     color="primary"
@@ -538,9 +483,7 @@ const ProductManagement: React.FC = () =>
                                 <TableColumn width={64}>IMAGE</TableColumn>
                                 <TableColumn>NAME</TableColumn>
                                 <TableColumn>SKU</TableColumn>
-                                <TableColumn>PRICE</TableColumn>
                                 <TableColumn>CATEGORY</TableColumn>
-                                <TableColumn>STOCK</TableColumn>
                                 <TableColumn>STATUS</TableColumn>
                                 <TableColumn width={64} hideHeader>ACTIONS</TableColumn>
                             </TableHeader>
@@ -568,18 +511,9 @@ const ProductManagement: React.FC = () =>
                                             </div>
                                         </TableCell>
                                         <TableCell>{product.sku}</TableCell>
-                                        <TableCell>${product.price.toFixed(2)}</TableCell>
                                         <TableCell>{getCategoryName(product.category_id)}</TableCell>
                                         <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Chip color={getStockStatusColor(product.in_stock)} variant="flat" size="sm">
-                                                    {product.in_stock ? "In Stock" : "Out of Stock"}
-                                                </Chip>
-                                                <span className="text-sm text-gray-500">({product.stock_quantity})</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Chip color={getActiveStatusColor(product.is_active)} variant="flat" size="sm">
+                                            <Chip color={getActiveStatusColor(product.is_active ?? false)} variant="flat" size="sm">
                                                 {product.is_active ? "Active" : "Inactive"}
                                             </Chip>
                                         </TableCell>
@@ -594,17 +528,6 @@ const ProductManagement: React.FC = () =>
                                                         onPress={() => openEditModal(product)}
                                                     >
                                                         <Icon icon="lucide:edit" className="w-4 h-4"/>
-                                                    </Button>
-                                                </Tooltip>
-                                                <Tooltip content={product.in_stock ? "Mark as Out of Stock" : "Mark as In Stock"}>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color={product.in_stock ? "danger" : "success"}
-                                                        isIconOnly
-                                                        onPress={() => handleToggleStock(product)}
-                                                    >
-                                                        <Icon icon={product.in_stock ? "lucide:package-x" : "lucide:package-check"} className="w-4 h-4"/>
                                                     </Button>
                                                 </Tooltip>
                                                 <Tooltip content={product.is_active ? "Deactivate Product" : "Activate Product"}>

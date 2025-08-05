@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
-import {Button, ButtonGroup, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem, Spinner} from "@heroui/react";
+import {useParams} from "react-router-dom";
+import {Button, ButtonGroup, Card, CardBody, Input, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
 import {productsApi} from "../../utils/api";
@@ -8,7 +8,6 @@ import {productsApi} from "../../utils/api";
 const Products: React.FC = () =>
 {
     const {categoryId} = useParams<{ categoryId: string }>();
-    const navigate = useNavigate();
     const {addToCart} = useCart();
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
@@ -50,14 +49,12 @@ const Products: React.FC = () =>
                 if (response.success && response.data) {
                     // Transform API response to match Product interface
                     const transformedProducts: Product[] = response.data.map((apiProduct: any) => ({
-                        id: apiProduct.id,
-                        name: apiProduct.name,
-                        description: apiProduct.description,
-                        price: apiProduct.price,
-                        category_id: apiProduct.category_id,
-                        imageUrl: apiProduct.image_url || "/api/placeholder/300/300",
-                        inStock: apiProduct.in_stock,
-                        sku: apiProduct.sku,
+                        id: apiProduct.product?.id || apiProduct.id,
+                        name: apiProduct.product?.name || apiProduct.name,
+                        description: apiProduct.product?.description || apiProduct.description,
+                        category_id: apiProduct.product?.category_id || apiProduct.category_id,
+                        imageUrl: apiProduct.product?.image_url || apiProduct.image_url || "/api/placeholder/300/300",
+                        sku: apiProduct.product?.sku || apiProduct.sku,
                     }));
                     setProducts(transformedProducts);
                 } else {
@@ -82,50 +79,35 @@ const Products: React.FC = () =>
             product.sku.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
-        switch (sortBy)
-        {
-            case "price-low":
-                filtered.sort((a, b) => a.price - b.price);
-                break;
-            case "price-high":
-                filtered.sort((a, b) => b.price - a.price);
-                break;
-            case "name":
-            default:
-                filtered.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-        }
+        // Sort by name only since price is no longer available
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
 
         return filtered;
-    }, [products, searchTerm, sortBy]);
+    }, [products, searchTerm]);
 
     const handleAddToCart = (product: Product) =>
     {
         addToCart(product);
     };
 
-    if (loading) {
+    if (loading)
+    {
         return (
-            <div className="p-6 flex justify-center items-center min-h-64">
-                <Spinner size="lg" />
+            <div className="flex justify-center items-center min-h-96">
+                <Spinner size="lg"/>
             </div>
         );
     }
 
-    if (error) {
+    if (error)
+    {
         return (
             <div className="p-6">
                 <Card className="max-w-md mx-auto">
                     <CardBody className="text-center py-8">
                         <Icon icon="lucide:alert-circle" className="w-16 h-16 text-red-500 mx-auto mb-4"/>
                         <h2 className="text-xl font-semibold mb-2">Error Loading Products</h2>
-                        <p className="text-gray-600 mb-4">{error}</p>
-                        <Button 
-                            color="primary" 
-                            onPress={() => window.location.reload()}
-                        >
-                            Try Again
-                        </Button>
+                        <p className="text-gray-600">{error}</p>
                     </CardBody>
                 </Card>
             </div>
@@ -133,191 +115,109 @@ const Products: React.FC = () =>
     }
 
     return (
-        <div className="p-6">
-            {/* Breadcrumb */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600 mb-4">
-                <Button
-                    variant="light"
-                    size="sm"
-                    onPress={() => navigate("/app/categories")}
-                    startContent={<Icon icon="lucide:chevron-left" className="w-4 h-4"/>}
-                >
-                    Categories
-                </Button>
-                <span>/</span>
-                <span className="font-medium">{categoryNames[categoryId || ""] || "Products"}</span>
-            </div>
-
+        <div className="p-6 space-y-6">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {categoryNames[categoryId || ""] || "Products"}
-                </h1>
-                <p className="text-gray-600">
-                    {filteredAndSortedProducts.length} products available
-                </p>
-            </div>
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">
+                        {categoryId ? categoryNames[categoryId] || "Products" : "All Products"}
+                    </h1>
+                    <p className="text-gray-600">
+                        {categoryId ? `Browse ${categoryNames[categoryId]} products` : "Browse all available products"}
+                    </p>
+                </div>
 
-            {/* Filters and Controls */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                {/* Search and Filters */}
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Input
                         placeholder="Search products..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
-                        variant="bordered"
                         className="w-full sm:w-80"
-                        classNames={{
-                            input: "text-sm",
-                            inputWrapper: "bg-white"
-                        }}
                     />
+
                     <Select
                         placeholder="Sort by"
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                        variant="bordered"
-                        className="w-full sm:w-48"
-                        classNames={{
-                            trigger: "bg-white"
-                        }}
+                        selectedKeys={[sortBy]}
+                        onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as string)}
+                        className="w-full sm:w-40"
                     >
-                        <SelectItem key="name" textValue="name">Name A-Z</SelectItem>
-                        <SelectItem key="price-low" textValue="price-low">Price: Low to High</SelectItem>
-                        <SelectItem key="price-high" textValue="price-high">Price: High to Low</SelectItem>
+                        <SelectItem key="name">Name</SelectItem>
                     </Select>
-                </div>
 
-                <ButtonGroup>
-                    <Button
-                        variant={viewMode === "grid" ? "solid" : "bordered"}
-                        isIconOnly
-                        onPress={() => setViewMode("grid")}
-                    >
-                        <Icon icon="lucide:grid-3x3" className="w-4 h-4"/>
-                    </Button>
-                    <Button
-                        variant={viewMode === "list" ? "solid" : "bordered"}
-                        isIconOnly
-                        onPress={() => setViewMode("list")}
-                    >
-                        <Icon icon="lucide:list" className="w-4 h-4"/>
-                    </Button>
-                </ButtonGroup>
+                    {/* View Mode Toggle */}
+                    <ButtonGroup>
+                        <Button
+                            variant={viewMode === "grid" ? "solid" : "bordered"}
+                            color={viewMode === "grid" ? "primary" : "default"}
+                            onPress={() => setViewMode("grid")}
+                            isIconOnly
+                        >
+                            <Icon icon="lucide:grid-3x3" className="w-4 h-4"/>
+                        </Button>
+                        <Button
+                            variant={viewMode === "list" ? "solid" : "bordered"}
+                            color={viewMode === "list" ? "primary" : "default"}
+                            onPress={() => setViewMode("list")}
+                            isIconOnly
+                        >
+                            <Icon icon="lucide:list" className="w-4 h-4"/>
+                        </Button>
+                    </ButtonGroup>
+                </div>
             </div>
 
             {/* Products Grid/List */}
-            <div className={
-                viewMode === "grid"
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            {filteredAndSortedProducts.length === 0 ? (
+                <Card>
+                    <CardBody className="text-center py-16">
+                        <Icon icon="lucide:package-x" className="w-16 h-16 text-gray-400 mx-auto mb-4"/>
+                        <h3 className="text-lg font-semibold mb-2">No Products Found</h3>
+                        <p className="text-gray-600">
+                            {searchTerm ? "Try adjusting your search terms." : "No products available in this category."}
+                        </p>
+                    </CardBody>
+                </Card>
+            ) : (
+                <div className={viewMode === "grid"
+                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     : "space-y-4"
-            }>
-                {filteredAndSortedProducts.map((product) => (
-                    <Card key={product.id} className="hover:shadow-lg transition-shadow">
-                        {viewMode === "grid" ? (
-                            <>
-                                <CardHeader className="p-0">
-                                    <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
-                                        {product.imageUrl && product.imageUrl !== "/api/placeholder/300/300" ? (
-                                            <img 
-                                                src={product.imageUrl} 
-                                                alt={product.name}
-                                                className="w-full h-full object-cover rounded-t-lg"
-                                            />
-                                        ) : (
-                                            <Icon icon="lucide:package" className="w-16 h-16 text-gray-400"/>
-                                        )}
-                                    </div>
-                                </CardHeader>
-                                <CardBody className="p-4">
-                                    <div className="mb-2">
-                                        <h3 className="font-semibold text-gray-900 line-clamp-2 mb-1">
-                                            {product.name}
-                                        </h3>
-                                        <p className="text-xs text-gray-500 mb-2">SKU: {product.sku}</p>
-                                    </div>
-                                    <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-                                        {product.description}
-                                    </p>
-                                    <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg font-bold text-gray-900">
-                      ${product.price.toFixed(2)}
-                    </span>
-                                        <Chip
-                                            size="sm"
-                                            color={product.inStock ? "success" : "danger"}
-                                            variant="flat"
-                                        >
-                                            {product.inStock ? "In Stock" : "Out of Stock"}
-                                        </Chip>
-                                    </div>
+                }>
+                    {filteredAndSortedProducts.map((product) => (
+                        <Card
+                            key={product.id}
+                            className={`hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-row" : ""}`}
+                        >
+                            <CardBody className={viewMode === "list" ? "flex flex-row gap-4 p-4" : "p-4"}>
+                                {/* Product Image */}
+                                <div className={viewMode === "list" ? "w-24 h-24 flex-shrink-0" : "w-full h-48 mb-4"}>
+                                    <img
+                                        src={product.imageUrl}
+                                        alt={product.name}
+                                        className="w-full h-full object-cover rounded-lg bg-gray-100"
+                                    />
+                                </div>
+
+                                {/* Product Info */}
+                                <div className={viewMode === "list" ? "flex-1" : ""}>
+                                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
+                                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
+                                    <p className="text-xs text-gray-500 mb-3">SKU: {product.sku}</p>
+
+                                    {/* Add to Cart Button */}
                                     <Button
                                         color="primary"
-                                        className="w-full"
-                                        isDisabled={!product.inStock}
                                         onPress={() => handleAddToCart(product)}
+                                        startContent={<Icon icon="lucide:shopping-cart" className="w-4 h-4"/>}
+                                        className="w-full"
                                     >
                                         Add to Cart
                                     </Button>
-                                </CardBody>
-                            </>
-                        ) : (
-                            <CardBody className="p-4">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                        {product.imageUrl && product.imageUrl !== "/api/placeholder/300/300" ? (
-                                            <img 
-                                                src={product.imageUrl} 
-                                                alt={product.name}
-                                                className="w-full h-full object-cover rounded-lg"
-                                            />
-                                        ) : (
-                                            <Icon icon="lucide:package" className="w-8 h-8 text-gray-400"/>
-                                        )}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-gray-900 mb-1">
-                                            {product.name}
-                                        </h3>
-                                        <p className="text-xs text-gray-500 mb-1">SKU: {product.sku}</p>
-                                        <p className="text-sm text-gray-600 line-clamp-2">
-                                            {product.description}
-                                        </p>
-                                    </div>
-                                    <div className="flex flex-col items-end space-y-2">
-                    <span className="text-lg font-bold text-gray-900">
-                      ${product.price.toFixed(2)}
-                    </span>
-                                        <Chip
-                                            size="sm"
-                                            color={product.inStock ? "success" : "danger"}
-                                            variant="flat"
-                                        >
-                                            {product.inStock ? "In Stock" : "Out of Stock"}
-                                        </Chip>
-                                        <Button
-                                            color="primary"
-                                            size="sm"
-                                            isDisabled={!product.inStock}
-                                            onPress={() => handleAddToCart(product)}
-                                        >
-                                            Add to Cart
-                                        </Button>
-                                    </div>
                                 </div>
                             </CardBody>
-                        )}
-                    </Card>
-                ))}
-            </div>
-
-            {/* No Results */}
-            {filteredAndSortedProducts.length === 0 && !loading && (
-                <div className="text-center py-12">
-                    <Icon icon="lucide:package-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No products found</h3>
-                    <p className="text-gray-600">Try adjusting your search terms or filters</p>
+                        </Card>
+                    ))}
                 </div>
             )}
         </div>

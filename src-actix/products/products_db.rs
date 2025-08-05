@@ -1,9 +1,50 @@
 use crate::products::products_data::{ProductFilter, ProductRecord, ProductWithCategory};
-use rust_decimal::Decimal;
 use sqlx::{Executor, MySqlPool};
 use tokio::fs;
 
 pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
+    // First, check if products table exists and modify it if needed
+    let table_exists = sqlx::query_scalar::<_, i32>(
+        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'products'"
+    )
+    .fetch_one(pool)
+    .await? > 0;
+
+    if table_exists {
+        // Check if price column exists and drop it if it does
+        let price_column_exists = sqlx::query_scalar::<_, i32>(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'price'"
+        )
+        .fetch_one(pool)
+        .await? > 0;
+
+        if price_column_exists {
+            pool.execute("ALTER TABLE products DROP COLUMN price").await?;
+        }
+
+        // Check if in_stock column exists and drop it if it does
+        let in_stock_column_exists = sqlx::query_scalar::<_, i32>(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'in_stock'"
+        )
+        .fetch_one(pool)
+        .await? > 0;
+
+        if in_stock_column_exists {
+            pool.execute("ALTER TABLE products DROP COLUMN in_stock").await?;
+        }
+
+        // Check if stock_quantity column exists and drop it if it does
+        let stock_quantity_column_exists = sqlx::query_scalar::<_, i32>(
+            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'stock_quantity'"
+        )
+        .fetch_one(pool)
+        .await? > 0;
+
+        if stock_quantity_column_exists {
+            pool.execute("ALTER TABLE products DROP COLUMN stock_quantity").await?;
+        }
+    }
+
     pool.execute(
         r#"
         CREATE TABLE IF NOT EXISTS `products` (
@@ -11,11 +52,8 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
             `name` VARCHAR(255) NOT NULL,
             `description` TEXT NOT NULL,
             `sku` VARCHAR(100) NOT NULL UNIQUE,
-            `price` DECIMAL(10,2) NOT NULL,
             `category_id` BIGINT UNSIGNED NOT NULL,
             `image_url` VARCHAR(500),
-            `in_stock` BOOLEAN NOT NULL DEFAULT TRUE,
-            `stock_quantity` INT NOT NULL DEFAULT 0,
             `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -23,7 +61,7 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
             FOREIGN KEY (`category_id`) REFERENCES `categories`(`id`) ON DELETE CASCADE,
             INDEX `idx_category_id` (`category_id`),
             INDEX `idx_sku` (`sku`),
-            INDEX `idx_active_stock` (`is_active`, `in_stock`),
+            INDEX `idx_active` (`is_active`),
             INDEX `idx_name` (`name`)
         )
         "#,
@@ -42,11 +80,8 @@ struct ProductWithCategoryQuery {
     name: String,
     description: String,
     sku: String,
-    price: Decimal,
     category_id: u64,
     image_url: Option<String>,
-    in_stock: bool,
-    stock_quantity: i32,
     is_active: bool,
     created_at: chrono::NaiveDateTime,
     updated_at: chrono::NaiveDateTime,
@@ -62,11 +97,8 @@ impl From<ProductWithCategoryQuery> for ProductWithCategory {
                 name: query_result.name,
                 description: query_result.description,
                 sku: query_result.sku,
-                price: query_result.price,
                 category_id: query_result.category_id,
                 image_url: query_result.image_url,
-                in_stock: query_result.in_stock,
-                stock_quantity: query_result.stock_quantity,
                 is_active: query_result.is_active,
                 created_at: query_result.created_at,
                 updated_at: query_result.updated_at,
@@ -86,7 +118,6 @@ impl ProductRecord {
             SELECT p.*, c.name as category_name
             FROM `products` p
             JOIN `categories` c ON p.category_id = c.id
-            WHERE p.is_active = TRUE AND c.is_active = TRUE
             "#,
         );
 
@@ -106,10 +137,6 @@ impl ProductRecord {
             bind_values.push(search_pattern.clone());
             bind_values.push(search_pattern.clone());
             bind_values.push(search_pattern);
-        }
-
-        if filter.in_stock_only.unwrap_or(false) {
-            conditions.push("p.in_stock = TRUE AND p.stock_quantity > 0");
         }
 
         if !conditions.is_empty() {
@@ -184,25 +211,20 @@ impl ProductRecord {
         name: &str,
         description: &str,
         sku: &str,
-        price: Decimal,
         category_id: u64,
         image_url: Option<&str>,
-        stock_quantity: i32,
     ) -> anyhow::Result<ProductRecord> {
         let result = sqlx::query(
             r#"
-            INSERT INTO `products` (`name`, `description`, `sku`, `price`, `category_id`, `image_url`, `stock_quantity`, `in_stock`)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO `products` (`name`, `description`, `sku`, `category_id`, `image_url`)
+            VALUES (?, ?, ?, ?, ?)
             "#
         )
         .bind(name)
         .bind(description)
         .bind(sku)
-        .bind(price)
         .bind(category_id)
         .bind(image_url)
-        .bind(stock_quantity)
-        .bind(stock_quantity > 0)
         .execute(pool)
         .await?;
 
@@ -218,11 +240,8 @@ impl ProductRecord {
         name: Option<&str>,
         description: Option<&str>,
         sku: Option<&str>,
-        price: Option<Decimal>,
         category_id: Option<u64>,
         image_url: Option<&str>,
-        in_stock: Option<bool>,
-        stock_quantity: Option<i32>,
         is_active: Option<bool>,
     ) -> anyhow::Result<Option<ProductRecord>> {
         let mut query = "UPDATE products SET ".to_string();
@@ -241,24 +260,12 @@ impl ProductRecord {
             updates.push("sku = ?");
             bind_count += 1;
         }
-        if price.is_some() {
-            updates.push("price = ?");
-            bind_count += 1;
-        }
         if category_id.is_some() {
             updates.push("category_id = ?");
             bind_count += 1;
         }
         if image_url.is_some() {
             updates.push("image_url = ?");
-            bind_count += 1;
-        }
-        if in_stock.is_some() {
-            updates.push("in_stock = ?");
-            bind_count += 1;
-        }
-        if stock_quantity.is_some() {
-            updates.push("stock_quantity = ?");
             bind_count += 1;
         }
         if is_active.is_some() {
@@ -287,20 +294,11 @@ impl ProductRecord {
         if let Some(sku_val) = sku {
             query_builder = query_builder.bind(sku_val);
         }
-        if let Some(price_val) = price {
-            query_builder = query_builder.bind(price_val);
-        }
         if let Some(cat_id_val) = category_id {
             query_builder = query_builder.bind(cat_id_val);
         }
         if let Some(img_val) = image_url {
             query_builder = query_builder.bind(img_val);
-        }
-        if let Some(stock_val) = in_stock {
-            query_builder = query_builder.bind(stock_val);
-        }
-        if let Some(qty_val) = stock_quantity {
-            query_builder = query_builder.bind(qty_val);
         }
         if let Some(active_val) = is_active {
             query_builder = query_builder.bind(active_val);
@@ -334,8 +332,8 @@ impl ProductRecord {
     ) -> anyhow::Result<Option<ProductRecord>> {
         let product = sqlx::query_as::<_, ProductRecord>(
             r#"
-            SELECT id, name, description, sku, price, category_id, image_url, 
-                   in_stock, stock_quantity, is_active, created_at, updated_at
+            SELECT id, name, description, sku, category_id, image_url,
+                   is_active, created_at, updated_at
             FROM `products`
             WHERE id = ?
             "#,

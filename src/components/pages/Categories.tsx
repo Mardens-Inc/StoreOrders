@@ -50,7 +50,7 @@ const Categories: React.FC = () =>
                         {
                             // Get products for this category to count them
                             const productsResponse = await apiClient.get<{ success: boolean, data: any[] }>(`/products?category_id=${category.id}`);
-                            const itemCount = productsResponse.success ? (productsResponse.data?.length || 0) : 0;
+                            const itemCount = productsResponse.success ? (productsResponse.data?.filter(i => i.is_active)?.length || 0) : 0;
 
                             return {
                                 ...category,

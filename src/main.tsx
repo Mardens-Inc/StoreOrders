@@ -3,7 +3,7 @@ import {BrowserRouter, Route, Routes, useNavigate} from "react-router-dom";
 import ReactDOM from "react-dom/client";
 import $ from "jquery";
 
-import "./assets/css/index.css";
+import "./css/index.css";
 import Login from "./components/auth/Login";
 import AppLayout from "./components/layout/AppLayout";
 import {HeroUIProvider} from "@heroui/react";

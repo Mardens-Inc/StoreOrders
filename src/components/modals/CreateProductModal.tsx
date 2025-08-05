@@ -15,10 +15,8 @@ interface CreateProductRequest
     name: string;
     description: string;
     sku: string;
-    price: number;
     category_id: string;
     image_url?: string;
-    stock_quantity: number;
 }
 
 interface CreateProductModalProps
@@ -49,63 +47,37 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
                     <>
                         <ModalHeader>Create New Product</ModalHeader>
                         <ModalBody className="space-y-4">
-                            <ImageUpload
-                                onImageSelect={onImageSelect}
-                                currentImageUrl={formData.image_url}
-                                disabled={uploadingImage}
-                            />
-
-                            {uploadingImage && (
-                                <div className="flex items-center gap-2 text-sm text-gray-600">
-                                    <Spinner size="sm"/>
-                                    <span>Uploading image...</span>
-                                </div>
-                            )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label="Product Name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                    isRequired
-                                />
-                                <Input
-                                    label="SKU"
-                                    value={formData.sku}
-                                    onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                                    isRequired
-                                />
-                            </div>
-                            <Textarea
-                                label="Description"
-                                value={formData.description}
-                                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                            <Input
+                                label="Product Name"
+                                placeholder="Enter product name"
+                                value={formData.name}
+                                onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
                                 isRequired
                             />
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <Input
-                                    label="Price"
-                                    type="number"
-                                    step="0.01"
-                                    value={formData.price.toString()}
-                                    onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                                    startContent={<span className="text-gray-500">$</span>}
-                                    isRequired
-                                />
-                                <Input
-                                    label="Stock Quantity"
-                                    type="number"
-                                    value={formData.stock_quantity.toString()}
-                                    onChange={(e) => setFormData({...formData, stock_quantity: parseInt(e.target.value) || 0})}
-                                    isRequired
-                                />
-                            </div>
+
+                            <Textarea
+                                label="Description"
+                                placeholder="Enter product description"
+                                value={formData.description}
+                                onChange={(e) => setFormData(prev => ({...prev, description: e.target.value}))}
+                                isRequired
+                            />
+
+                            <Input
+                                label="SKU"
+                                placeholder="Enter product SKU"
+                                value={formData.sku}
+                                onChange={(e) => setFormData(prev => ({...prev, sku: e.target.value}))}
+                                isRequired
+                            />
+
                             <Select
                                 label="Category"
+                                placeholder="Select a category"
                                 selectedKeys={formData.category_id ? [formData.category_id] : []}
-                                onSelectionChange={(keys) =>
-                                {
-                                    const categoryId = Array.from(keys)[0] as string;
-                                    setFormData({...formData, category_id: categoryId});
+                                onSelectionChange={(keys) => {
+                                    const selectedKey = Array.from(keys)[0] as string;
+                                    setFormData(prev => ({...prev, category_id: selectedKey}));
                                 }}
                                 isRequired
                             >
@@ -115,16 +87,27 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
                                     </SelectItem>
                                 ))}
                             </Select>
+
+                            <ImageUpload
+                                onImageSelect={onImageSelect}
+                                currentImageUrl={formData.image_url}
+                                disabled={uploadingImage}
+                            />
                         </ModalBody>
                         <ModalFooter>
-                            <Button variant="light" onPress={onClose}>
+                            <Button
+                                color="danger"
+                                variant="light"
+                                onPress={onClose}
+                                isDisabled={actionLoading}
+                            >
                                 Cancel
                             </Button>
                             <Button
                                 color="primary"
                                 onPress={onCreateProduct}
                                 isLoading={actionLoading}
-                                isDisabled={!formData.name || !formData.sku || !formData.category_id}
+                                spinner={<Spinner color="white" size="sm"/>}
                             >
                                 Create Product
                             </Button>

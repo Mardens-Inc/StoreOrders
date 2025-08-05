@@ -1,20 +1,6 @@
 import React from 'react';
 import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from '@heroui/react';
-
-interface Product {
-    id: string;
-    name: string;
-    description: string;
-    sku: string;
-    price: number;
-    category_id: string;
-    image_url?: string;
-    in_stock: boolean;
-    stock_quantity: number;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
+import { Product } from '../../providers/CartProvider';
 
 interface DeleteProductModalProps {
     isOpen: boolean;
