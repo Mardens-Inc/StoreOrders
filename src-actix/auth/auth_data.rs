@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use serde_hash::HashIds;
 use sqlx::FromRow;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,11 +75,12 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, HashIds)]
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,
     pub role: UserRole,
+    #[hash]
     pub store_id: Option<u64>, // Hashed store ID
 }
 

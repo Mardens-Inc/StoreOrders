@@ -15,7 +15,7 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "watch": "cargo watch -x \"run --bin store_orders\" -C dist -N --why -w ../src-actix/",
     "build": "npm run \"build-frontend\" && npm run \"build-api\"",
-    "publish": "pwp -H 192.168.21.209 -u administrator -a C:\\Users\\drew.chase\\.ssh\\mss-sshkey_ossh.key -s storeorders --binary store_orders -BIStc \"npm run build\""
+    "publish": "pwp -H 192.168.21.209 -u administrator -a C:\\Users\\drew.chase\\.ssh\\mss-sshkey_ossh.key -s storeorders --binary store_orders -BSc \"npm run build\""
   },
   "dependencies": {
     "@heroui/react": "2.7.11",

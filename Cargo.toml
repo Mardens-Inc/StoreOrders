@@ -1,6 +1,6 @@
 [package]
 name = "store_orders"
-version = "0.0.1"
+version = "0.0.0"
 edition = "2024"
 authors = ["Drew Chase (Work) <dcmanproductions@gmail.com>"]
 build = "src-actix/build.rs"
