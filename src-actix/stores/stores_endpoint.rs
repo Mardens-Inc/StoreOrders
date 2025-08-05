@@ -2,6 +2,8 @@ use crate::stores::stores_data::{CreateStoreRequest, StoreRecord, UpdateStoreReq
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use serde_json::json;
+use crate::auth::{jwt_validator};
+use actix_web_httpauth::middleware::HttpAuthentication;
 
 #[get("")]
 pub async fn get_stores(
@@ -101,13 +103,21 @@ pub async fn delete_store(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let auth = HttpAuthentication::bearer(jwt_validator);
+
     cfg.service(
         web::scope("/stores")
+            // Public endpoints - no auth required for reading
             .service(get_stores)
             .service(get_store)
-            .service(create_store)
-            .service(update_store)
-            .service(delete_store)
+            // Admin-only endpoints with authentication
+            .service(
+                web::scope("/admin")
+                    .wrap(auth)
+                    .service(create_store)
+                    .service(update_store)
+                    .service(delete_store)
+            )
             .default_service(web::to(|| async {
                 HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
             })),

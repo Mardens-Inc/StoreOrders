@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Chip, Input, Spinner} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, cn, Input, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {apiClient, categoriesApi} from "../../utils/api";
 
@@ -49,7 +49,7 @@ const Categories: React.FC = () =>
                         try
                         {
                             // Get products for this category to count them
-                            const productsResponse = await apiClient.get(`/products?category_id=${category.id}`);
+                            const productsResponse = await apiClient.get<{ success: boolean, data: any[] }>(`/products?category_id=${category.id}`);
                             const itemCount = productsResponse.success ? (productsResponse.data?.length || 0) : 0;
 
                             return {
@@ -135,7 +135,22 @@ const Categories: React.FC = () =>
                         >
                             <CardHeader className="pb-3">
                                 <div className="flex items-center justify-between w-full">
-                                    <div className={`p-3 rounded-lg bg-${category.color}-100 group-hover:bg-${category.color}-200 transition-colors`}>
+                                    <div
+                                        className={cn(
+                                            `p-3 rounded-lg transition-colors`,
+                                            "data-[color=blue]:bg-blue-100 group-hover:data-[color=blue]:bg-blue-200",
+                                            "data-[color=green]:bg-green-100 group-hover:data-[color=green]:bg-green-200",
+                                            "data-[color=orange]:bg-orange-100 group-hover:data-[color=orange]:bg-orange-200",
+                                            "data-[color=purple]:bg-purple-100 group-hover:data-[color=purple]:bg-purple-200",
+                                            "data-[color=indigo]:bg-indigo-100 group-hover:data-[color=indigo]:bg-indigo-200",
+                                            "data-[color=red]:bg-red-100 group-hover:data-[color=red]:bg-red-200",
+                                            "data-[color=yellow]:bg-yellow-100 group-hover:data-[color=yellow]:bg-yellow-200",
+                                            "data-[color=gray]:bg-gray-100 group-hover:data-[color=gray]:bg-gray-200",
+                                            "data-[color=pink]:bg-pink-100 group-hover:data-[color=pink]:bg-pink-200",
+                                            "data-[color=teal]:bg-teal-100 group-hover:data-[color=teal]:bg-teal-200"
+                                        )}
+                                        data-color={category.color}
+                                    >
                                         <Icon
                                             icon={category.icon || "lucide:folder"}
                                             className={`w-6 h-6 text-${category.color}-600`}

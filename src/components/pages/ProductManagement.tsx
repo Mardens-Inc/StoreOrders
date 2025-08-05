@@ -1,10 +1,15 @@
 import React, {useEffect, useState} from "react";
-import {Button, Card, CardBody, CardHeader, Chip, Image, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Textarea, useDisclosure} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Image, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {apiClient, categoriesApi} from "../../utils/api";
-import ImageUpload from "../ImageUpload";
 import ImageCropModal from "../ImageCropModal";
+import CreateProductModal from "../modals/CreateProductModal";
+import EditProductModal from "../modals/EditProductModal";
+import DeleteProductModal from "../modals/DeleteProductModal";
+import CreateCategoryModal from "../modals/CreateCategoryModal";
+import EditCategoryModal from "../modals/EditCategoryModal";
+import DeleteCategoryModal from "../modals/DeleteCategoryModal";
 
 interface Product
 {
@@ -148,7 +153,7 @@ const ProductManagement: React.FC = () =>
         try
         {
             setActionLoading(true);
-            const response = await apiClient.post("/products", formData) as any;
+            const response = await apiClient.post("/products/admin", formData) as any;
 
             if (response.success)
             {
@@ -332,7 +337,7 @@ const ProductManagement: React.FC = () =>
                 const fileBuffer = await croppedFile.arrayBuffer();
 
                 // Upload the image
-                const response = await fetch("/api/upload", {
+                const response = await fetch("/api/upload/product-image", {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${localStorage.getItem("auth_token")}`,
@@ -609,218 +614,39 @@ const ProductManagement: React.FC = () =>
             </Card>
 
             {/* Create Product Modal */}
-            <Modal isOpen={isCreateOpen} onOpenChange={onCreateOpenChange} size="lg" scrollBehavior={"inside"} backdrop={"blur"}>
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Create New Product</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Product Name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                        isRequired
-                                    />
-                                    <Input
-                                        label="SKU"
-                                        value={formData.sku}
-                                        onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Textarea
-                                    label="Description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                    isRequired
-                                />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Price"
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.price.toString()}
-                                        onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                                        startContent={<span className="text-gray-500">$</span>}
-                                        isRequired
-                                    />
-                                    <Input
-                                        label="Stock Quantity"
-                                        type="number"
-                                        value={formData.stock_quantity.toString()}
-                                        onChange={(e) => setFormData({...formData, stock_quantity: parseInt(e.target.value) || 0})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Select
-                                    label="Category"
-                                    selectedKeys={formData.category_id ? [formData.category_id] : []}
-                                    onSelectionChange={(keys) =>
-                                    {
-                                        const categoryId = Array.from(keys)[0] as string;
-                                        setFormData({...formData, category_id: categoryId});
-                                    }}
-                                    isRequired
-                                >
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
-
-                                {/* Replace Image URL input with ImageUpload component */}
-                                <ImageUpload
-                                    onImageSelect={handleImageSelect}
-                                    currentImageUrl={formData.image_url}
-                                    disabled={uploadingImage}
-                                />
-
-                                {uploadingImage && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Spinner size="sm"/>
-                                        <span>Uploading image...</span>
-                                    </div>
-                                )}
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleCreateProduct}
-                                    isLoading={actionLoading}
-                                    isDisabled={!formData.name || !formData.sku || !formData.category_id}
-                                >
-                                    Create Product
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <CreateProductModal
+                isOpen={isCreateOpen}
+                onOpenChange={onCreateOpenChange}
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+                onCreateProduct={handleCreateProduct}
+                onImageSelect={handleImageSelect}
+                actionLoading={actionLoading}
+                uploadingImage={uploadingImage}
+            />
 
             {/* Edit Product Modal */}
-            <Modal isOpen={isEditOpen} onOpenChange={onEditOpenChange} size="lg">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Edit Product</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Product Name"
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
-                                        isRequired
-                                    />
-                                    <Input
-                                        label="SKU"
-                                        value={formData.sku}
-                                        onChange={(e) => setFormData({...formData, sku: e.target.value})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Textarea
-                                    label="Description"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({...formData, description: e.target.value})}
-                                    isRequired
-                                />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <Input
-                                        label="Price"
-                                        type="number"
-                                        step="0.01"
-                                        value={formData.price.toString()}
-                                        onChange={(e) => setFormData({...formData, price: parseFloat(e.target.value) || 0})}
-                                        startContent={<span className="text-gray-500">$</span>}
-                                        isRequired
-                                    />
-                                    <Input
-                                        label="Stock Quantity"
-                                        type="number"
-                                        value={formData.stock_quantity.toString()}
-                                        onChange={(e) => setFormData({...formData, stock_quantity: parseInt(e.target.value) || 0})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Select
-                                    label="Category"
-                                    selectedKeys={formData.category_id ? [formData.category_id] : []}
-                                    onSelectionChange={(keys) =>
-                                    {
-                                        const categoryId = Array.from(keys)[0] as string;
-                                        setFormData({...formData, category_id: categoryId});
-                                    }}
-                                    isRequired
-                                >
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
-                                <ImageUpload
-                                    onImageSelect={handleImageSelect}
-                                    currentImageUrl={formData.image_url}
-                                    disabled={uploadingImage}
-                                />
-                                {uploadingImage && (
-                                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                                        <Spinner size="sm"/>
-                                        <span>Uploading image...</span>
-                                    </div>
-                                )}
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleUpdateProduct}
-                                    isLoading={actionLoading}
-                                    isDisabled={!formData.name || !formData.sku || !formData.category_id}
-                                >
-                                    Update Product
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <EditProductModal
+                isOpen={isEditOpen}
+                onOpenChange={onEditOpenChange}
+                formData={formData}
+                setFormData={setFormData}
+                categories={categories}
+                onUpdateProduct={handleUpdateProduct}
+                onImageSelect={handleImageSelect}
+                actionLoading={actionLoading}
+                uploadingImage={uploadingImage}
+            />
 
             {/* Delete Product Modal */}
-            <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange}>
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Delete Product</ModalHeader>
-                            <ModalBody>
-                                <p>
-                                    Are you sure you want to delete the product <strong>{selectedProduct?.name}</strong>?
-                                    This action cannot be undone.
-                                </p>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="danger"
-                                    onPress={handleDeleteProduct}
-                                    isLoading={actionLoading}
-                                >
-                                    Delete Product
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <DeleteProductModal
+                isOpen={isDeleteOpen}
+                onOpenChange={onDeleteOpenChange}
+                selectedProduct={selectedProduct}
+                onDeleteProduct={handleDeleteProduct}
+                actionLoading={actionLoading}
+            />
 
             {/* Image Crop Modal */}
             <ImageCropModal
@@ -854,9 +680,9 @@ const ProductManagement: React.FC = () =>
                     ) : (
                         <Table aria-label="Categories table" removeWrapper>
                             <TableHeader>
-                                <TableColumn>ICON</TableColumn>
+                                <TableColumn width={64} maxWidth={64} hideHeader>ICON</TableColumn>
                                 <TableColumn>NAME</TableColumn>
-                                <TableColumn>ACTIONS</TableColumn>
+                                <TableColumn width={64} maxWidth={64} hideHeader>ACTIONS</TableColumn>
                             </TableHeader>
                             <TableBody>
                                 {categories.map((category) => (
@@ -907,169 +733,35 @@ const ProductManagement: React.FC = () =>
             </Card>
 
             {/* Create Category Modal */}
-            <Modal isOpen={isCreateCategoryOpen} onOpenChange={onCreateCategoryOpenChange} size="lg">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Create New Category</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4">
-                                    <Input
-                                        label="Category Name"
-                                        value={categoryFormData.name}
-                                        onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Textarea
-                                    label="Description"
-                                    value={categoryFormData.description}
-                                    onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})}
-                                />
-                                <Select
-                                    label="Icon"
-                                    placeholder="Select an icon"
-                                    selectedKeys={categoryFormData.icon ? [categoryFormData.icon] : []}
-                                    onSelectionChange={(keys) => {
-                                        const iconValue = Array.from(keys)[0] as string;
-                                        setCategoryFormData({...categoryFormData, icon: iconValue});
-                                    }}
-                                    renderValue={(items) => {
-                                        return items.map((item) => {
-                                            const iconData = availableIcons.find(icon => icon.value === item.key);
-                                            return (
-                                                <div key={item.key} className="flex items-center gap-2">
-                                                    <Icon icon={iconData?.icon || "lucide:folder"} className="w-4 h-4"/>
-                                                    <span>{iconData?.label}</span>
-                                                </div>
-                                            );
-                                        });
-                                    }}
-                                >
-                                    {availableIcons.map((iconOption) => (
-                                        <SelectItem
-                                            key={iconOption.value}
-                                            startContent={<Icon icon={iconOption.icon} className="w-4 h-4"/>}
-                                        >
-                                            {iconOption.label}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleCreateCategory}
-                                    isLoading={actionLoading}
-                                    isDisabled={!categoryFormData.name}
-                                >
-                                    Create Category
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <CreateCategoryModal
+                isOpen={isCreateCategoryOpen}
+                onOpenChange={onCreateCategoryOpenChange}
+                categoryFormData={categoryFormData}
+                setCategoryFormData={setCategoryFormData}
+                onCreateCategory={handleCreateCategory}
+                actionLoading={actionLoading}
+                availableIcons={availableIcons}
+            />
 
             {/* Edit Category Modal */}
-            <Modal isOpen={isEditCategoryOpen} onOpenChange={onEditCategoryOpenChange} size="lg">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Edit Category</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <div className="grid grid-cols-1 gap-4">
-                                    <Input
-                                        label="Category Name"
-                                        value={categoryFormData.name}
-                                        onChange={(e) => setCategoryFormData({...categoryFormData, name: e.target.value})}
-                                        isRequired
-                                    />
-                                </div>
-                                <Textarea
-                                    label="Description"
-                                    value={categoryFormData.description}
-                                    onChange={(e) => setCategoryFormData({...categoryFormData, description: e.target.value})}
-                                />
-                                <Select
-                                    label="Icon"
-                                    placeholder="Select an icon"
-                                    selectedKeys={categoryFormData.icon ? [categoryFormData.icon] : []}
-                                    onSelectionChange={(keys) => {
-                                        const iconValue = Array.from(keys)[0] as string;
-                                        setCategoryFormData({...categoryFormData, icon: iconValue});
-                                    }}
-                                    renderValue={(items) => {
-                                        return items.map((item) => {
-                                            const iconData = availableIcons.find(icon => icon.value === item.key);
-                                            return (
-                                                <div key={item.key} className="flex items-center gap-2">
-                                                    <Icon icon={iconData?.icon || "lucide:folder"} className="w-4 h-4"/>
-                                                    <span>{iconData?.label}</span>
-                                                </div>
-                                            );
-                                        });
-                                    }}
-                                >
-                                    {availableIcons.map((iconOption) => (
-                                        <SelectItem
-                                            key={iconOption.value}
-                                            startContent={<Icon icon={iconOption.icon} className="w-4 h-4"/>}
-                                        >
-                                            {iconOption.label}
-                                        </SelectItem>
-                                    ))}
-                                </Select>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleUpdateCategory}
-                                    isLoading={actionLoading}
-                                    isDisabled={!categoryFormData.name}
-                                >
-                                    Update Category
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <EditCategoryModal
+                isOpen={isEditCategoryOpen}
+                onOpenChange={onEditCategoryOpenChange}
+                categoryFormData={categoryFormData}
+                setCategoryFormData={setCategoryFormData}
+                onUpdateCategory={handleUpdateCategory}
+                actionLoading={actionLoading}
+                availableIcons={availableIcons}
+            />
 
             {/* Delete Category Modal */}
-            <Modal isOpen={isDeleteCategoryOpen} onOpenChange={onDeleteCategoryOpenChange}>
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Delete Category</ModalHeader>
-                            <ModalBody>
-                                <p>
-                                    Are you sure you want to delete the category <strong>{selectedCategory?.name}</strong>?
-                                    This action cannot be undone.
-                                </p>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="danger"
-                                    onPress={handleDeleteCategory}
-                                    isLoading={actionLoading}
-                                >
-                                    Delete Category
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <DeleteCategoryModal
+                isOpen={isDeleteCategoryOpen}
+                onOpenChange={onDeleteCategoryOpenChange}
+                selectedCategory={selectedCategory}
+                onDeleteCategory={handleDeleteCategory}
+                actionLoading={actionLoading}
+            />
         </div>
     );
 };

@@ -1,8 +1,11 @@
 import React, {useEffect, useState} from "react";
-import {Button, Card, CardBody, CardHeader, Chip, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {apiClient, authApi} from "../../utils/api";
+import CreateUserModal from "../modals/CreateUserModal";
+import EditUserModal from "../modals/EditUserModal";
+import DeleteUserModal from "../modals/DeleteUserModal";
 
 interface User
 {
@@ -294,164 +297,36 @@ const UserManagement: React.FC = () =>
             </Card>
 
             {/* Create User Modal */}
-            <Modal isOpen={isCreateOpen} onOpenChange={onCreateOpenChange} size="md">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Create New User</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <Input
-                                    label="Email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                    isRequired
-                                />
-                                <Input
-                                    label="Password"
-                                    type="password"
-                                    value={formData.password}
-                                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                    isRequired
-                                />
-                                <Select
-                                    label="Role"
-                                    selectedKeys={[formData.role]}
-                                    onSelectionChange={(keys) =>
-                                    {
-                                        const role = Array.from(keys)[0] as "store" | "admin";
-                                        setFormData({...formData, role});
-                                    }}
-                                >
-                                    <SelectItem key="store">Store User</SelectItem>
-                                    <SelectItem key="admin">Administrator</SelectItem>
-                                </Select>
-                                {formData.role === "store" && (
-                                    <Select
-                                        label="Store"
-                                        selectedKeys={formData.store_id ? [formData.store_id] : []}
-                                        onSelectionChange={(keys) =>
-                                        {
-                                            const storeId = Array.from(keys)[0] as string;
-                                            setFormData({...formData, store_id: storeId});
-                                        }}
-                                    >
-                                        {stores.map((store) => (
-                                            <SelectItem key={store.id}>
-                                                {getStoreName(store.id)}
-                                            </SelectItem>
-                                        ))}
-                                    </Select>
-                                )}
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleCreateUser}
-                                    isLoading={actionLoading}
-                                    isDisabled={!formData.email || !formData.password}
-                                >
-                                    Create User
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <CreateUserModal
+                isOpen={isCreateOpen}
+                onOpenChange={onCreateOpenChange}
+                onCreateUser={handleCreateUser}
+                actionLoading={actionLoading}
+                formData={formData}
+                setFormData={setFormData}
+                stores={stores}
+            />
 
             {/* Edit User Modal */}
-            <Modal isOpen={isEditOpen} onOpenChange={onEditOpenChange} size="md">
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Edit User</ModalHeader>
-                            <ModalBody className="space-y-4">
-                                <Input
-                                    label="Email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                                    isRequired
-                                />
-                                <Select
-                                    label="Role"
-                                    selectedKeys={[formData.role]}
-                                    onSelectionChange={(keys) =>
-                                    {
-                                        const role = Array.from(keys)[0] as "store" | "admin";
-                                        setFormData({...formData, role});
-                                    }}
-                                >
-                                    <SelectItem key="store">Store User</SelectItem>
-                                    <SelectItem key="admin">Administrator</SelectItem>
-                                </Select>
-                                {formData.role === "store" && (
-                                    <Select
-                                        label="Store"
-                                        selectedKeys={formData.store_id ? [formData.store_id] : []}
-                                        onSelectionChange={(keys) =>
-                                        {
-                                            const storeId = Array.from(keys)[0] as string;
-                                            setFormData({...formData, store_id: storeId});
-                                        }}
-                                    >
-                                        {stores.map((store) => (
-                                            <SelectItem key={store.id}>
-                                                {getStoreName(store.id)}
-                                            </SelectItem>
-                                        ))}
-                                    </Select>
-                                )}
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="primary"
-                                    onPress={handleUpdateUser}
-                                    isLoading={actionLoading}
-                                    isDisabled={!formData.email}
-                                >
-                                    Update User
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <EditUserModal
+                isOpen={isEditOpen}
+                onOpenChange={onEditOpenChange}
+                onUpdateUser={handleUpdateUser}
+                actionLoading={actionLoading}
+                formData={formData}
+                setFormData={setFormData}
+                stores={stores}
+                selectedUser={selectedUser}
+            />
 
             {/* Delete User Modal */}
-            <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange}>
-                <ModalContent>
-                    {(onClose) => (
-                        <>
-                            <ModalHeader>Delete User</ModalHeader>
-                            <ModalBody>
-                                <p>
-                                    Are you sure you want to delete the user <strong>{selectedUser?.email}</strong>?
-                                    This action cannot be undone.
-                                </p>
-                            </ModalBody>
-                            <ModalFooter>
-                                <Button variant="light" onPress={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button
-                                    color="danger"
-                                    onPress={handleDeleteUser}
-                                    isLoading={actionLoading}
-                                >
-                                    Delete User
-                                </Button>
-                            </ModalFooter>
-                        </>
-                    )}
-                </ModalContent>
-            </Modal>
+            <DeleteUserModal
+                isOpen={isDeleteOpen}
+                onOpenChange={onDeleteOpenChange}
+                onDeleteUser={handleDeleteUser}
+                actionLoading={actionLoading}
+                selectedUser={selectedUser}
+            />
         </div>
     );
 };

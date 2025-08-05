@@ -1,11 +1,12 @@
-use crate::auth::ClaimsExtractor;
+use crate::auth::{jwt_validator, ClaimsExtractor};
 use actix_web::{post, web, HttpRequest, HttpResponse, Responder};
+use actix_web_httpauth::middleware::HttpAuthentication;
 use database_common_lib::http_error::Result;
 use serde_json::json;
 use tokio::fs;
 use uuid::Uuid;
 
-#[post("/upload")]
+#[post("/product-image")]
 pub async fn upload_product_image(req: HttpRequest, bytes: web::Bytes) -> Result<impl Responder> {
     // Check if user is admin
     if let Some(claims) = req.get_claims() {
@@ -21,7 +22,7 @@ pub async fn upload_product_image(req: HttpRequest, bytes: web::Bytes) -> Result
     }
 
     // Create products directory if it doesn't exist
-    let products_dir = "products";
+    let products_dir = "./products";
     if fs::metadata(products_dir).await.is_err() {
         fs::create_dir_all(products_dir).await?;
     }
@@ -59,5 +60,11 @@ pub async fn upload_product_image(req: HttpRequest, bytes: web::Bytes) -> Result
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(upload_product_image);
+    let auth = HttpAuthentication::bearer(jwt_validator);
+
+    cfg.service(
+        web::scope("/upload")
+            .wrap(auth)
+            .service(upload_product_image)
+    );
 }

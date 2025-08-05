@@ -192,18 +192,20 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
     cfg.service(
         web::scope("/products")
-            .service(get_products)  // Public endpoint - no auth required
-            .service(get_product)   // Public endpoint - no auth required
-            .service(get_products_by_category)  // Public endpoint - no auth required
+            // Public endpoints - no auth required
+            .service(get_products)
+            .service(get_product)
+            .service(get_products_by_category)
+            // Admin-only endpoints with authentication
             .service(
                 web::scope("/admin")
-                    .wrap(auth)  // Admin-only endpoints
+                    .wrap(auth)
                     .service(create_product)
                     .service(update_product)
                     .service(delete_product)
             )
             .default_service(web::to(|| async {
-                HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
+                HttpResponse::NotFound().json(json!({ "error": "Product endpoint not found" }))
             }))
     );
 }

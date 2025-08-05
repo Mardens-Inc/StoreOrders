@@ -96,29 +96,6 @@ export default function ImageCropModal({
         }
     };
 
-    const getCroppedFile = (): Promise<File | null> =>
-    {
-        return new Promise((resolve) =>
-        {
-            if (cropperRef.current?.cropper)
-            {
-                cropperRef.current.cropper.getCroppedCanvas().toBlob((blob: Blob | null) =>
-                {
-                    if (blob)
-                    {
-                        const file = new File([blob], `cropped-${Date.now()}.jpg`, {type: "image/jpeg"});
-                        resolve(file);
-                    } else
-                    {
-                        resolve(null);
-                    }
-                }, "image/jpeg", 0.9);
-            } else
-            {
-                resolve(null);
-            }
-        });
-    };
 
     return (
         <Modal

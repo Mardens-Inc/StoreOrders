@@ -2,6 +2,8 @@ use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use serde_json::json;
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use crate::categories::categories_data::{CategoryRecord, CreateCategoryRequest, UpdateCategoryRequest};
+use crate::auth::{jwt_validator};
+use actix_web_httpauth::middleware::HttpAuthentication;
 
 #[get("")]
 pub async fn get_categories(
@@ -146,13 +148,21 @@ pub async fn delete_category(
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
+    let auth = HttpAuthentication::bearer(jwt_validator);
+
     cfg.service(
         web::scope("/categories")
+            // Public endpoints - no auth required for reading
             .service(get_categories)
             .service(get_category)
-            .service(create_category)
-            .service(update_category)
-            .service(delete_category)
+            // Admin-only endpoints with authentication
+            .service(
+                web::scope("/admin")
+                    .wrap(auth)
+                    .service(create_category)
+                    .service(update_category)
+                    .service(delete_category)
+            )
             .default_service(web::to(|| async {
                 HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
             }))
