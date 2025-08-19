@@ -5,7 +5,7 @@ use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, 
 use serde::{Deserialize, Serialize};
 
 // In production, this should be loaded from environment variables
-const JWT_SECRET: &str = "your-super-secret-jwt-key-change-this-in-production";
+const JWT_SECRET: &str = "mardens-store-orders";
 const JWT_EXPIRATION_HOURS: i64 = 24;
 const REFRESH_TOKEN_EXPIRATION_DAYS: i64 = 30;
 
