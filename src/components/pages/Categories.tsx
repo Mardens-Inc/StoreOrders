@@ -4,7 +4,7 @@ import {Button, Card, CardBody, CardHeader, Chip, cn, Input, Spinner} from "@her
 import {Icon} from "@iconify-icon/react";
 import {apiClient, categoriesApi} from "../../utils/api";
 
-interface Category
+export interface Category
 {
     id: string;
     name: string;

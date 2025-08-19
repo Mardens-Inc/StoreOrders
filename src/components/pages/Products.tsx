@@ -3,7 +3,9 @@ import {useParams} from "react-router-dom";
 import {Button, ButtonGroup, Card, CardBody, Input, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
-import {productsApi} from "../../utils/api";
+import {categoriesApi, productsApi} from "../../utils/api";
+import {Category} from "./Categories.tsx";
+import {ProductItem} from "../product/ProductItem.tsx";
 
 const Products: React.FC = () =>
 {
@@ -11,42 +13,44 @@ const Products: React.FC = () =>
     const {addToCart} = useCart();
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [viewMode, setViewMode] = useState<"grid" | "list">(localStorage.getItem("category_view_mode") === "list" ? "list" : "grid");
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [category, setCategory] = useState<Category | undefined>(undefined);
 
-    const categoryNames: { [key: string]: string } = {
-        "office-supplies": "Office Supplies",
-        "cleaning-supplies": "Cleaning Supplies",
-        "break-room": "Break Room",
-        "paper-products": "Paper Products",
-        "technology": "Technology",
-        "furniture": "Furniture",
-        "safety-equipment": "Safety Equipment",
-        "maintenance": "Maintenance"
-    };
+    useEffect(() =>
+    {
 
-    useEffect(() => {
-        const fetchProducts = async () => {
-            try {
+        categoriesApi.getCategories().then(categoriesResponse =>
+        {
+            if (categoriesResponse.success && categoriesResponse.data)
+                setCategory((categoriesResponse.data as Category[]).find(i => i.id === categoryId));
+        });
+        const fetchProducts = async () =>
+        {
+            try
+            {
                 setLoading(true);
                 setError(null);
-                
+
                 let response;
-                if (categoryId) {
+                if (categoryId)
+                {
                     // Fetch products by category if categoryId is provided
                     response = await productsApi.getProductsByCategory(categoryId);
-                } else {
+                } else
+                {
                     // Fetch all products with optional filters
                     const filters = {
                         search: searchTerm || undefined,
-                        limit: 100, // Reasonable limit for display
+                        limit: 100 // Reasonable limit for display
                     };
                     response = await productsApi.getProducts(filters);
                 }
 
-                if (response.success && response.data) {
+                if (response.success && response.data)
+                {
                     // Transform API response to match Product interface
                     const transformedProducts: Product[] = response.data.map((apiProduct: any) => ({
                         id: apiProduct.product?.id || apiProduct.id,
@@ -54,16 +58,19 @@ const Products: React.FC = () =>
                         description: apiProduct.product?.description || apiProduct.description,
                         category_id: apiProduct.product?.category_id || apiProduct.category_id,
                         imageUrl: apiProduct.product?.image_url || apiProduct.image_url || "/api/placeholder/300/300",
-                        sku: apiProduct.product?.sku || apiProduct.sku,
+                        sku: apiProduct.product?.sku || apiProduct.sku
                     }));
                     setProducts(transformedProducts);
-                } else {
+                } else
+                {
                     setError("Failed to load products");
                 }
-            } catch (err) {
+            } catch (err)
+            {
                 console.error("Error fetching products:", err);
                 setError("Failed to load products. Please try again.");
-            } finally {
+            } finally
+            {
                 setLoading(false);
             }
         };
@@ -84,6 +91,11 @@ const Products: React.FC = () =>
 
         return filtered;
     }, [products, searchTerm]);
+
+    useEffect(() =>
+    {
+        localStorage.setItem("category_view_mode", viewMode);
+    }, [viewMode]);
 
     const handleAddToCart = (product: Product) =>
     {
@@ -119,11 +131,12 @@ const Products: React.FC = () =>
             {/* Header */}
             <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        {categoryId ? categoryNames[categoryId] || "Products" : "All Products"}
+                    <h1 className="text-2xl font-bold text-gray-900 flex flex-row gap-2 items-center">
+                        {category?.icon && <Icon icon={category.icon}/>}
+                        {categoryId ? category?.name || "Products" : "All Products"}
                     </h1>
                     <p className="text-gray-600">
-                        {categoryId ? `Browse ${categoryNames[categoryId]} products` : "Browse all available products"}
+                        {categoryId ? <>Browse <span className={"font-bold italic"}>{category?.name}</span> products</> : "Browse all available products"}
                     </p>
                 </div>
 
@@ -184,44 +197,12 @@ const Products: React.FC = () =>
                     ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     : "space-y-4"
                 }>
-                    {filteredAndSortedProducts.map((product) => (
-                        <Card
-                            key={product.id}
-                            className={`hover:shadow-lg transition-shadow ${viewMode === "list" ? "flex flex-row" : ""}`}
-                        >
-                            <CardBody className={viewMode === "list" ? "flex flex-row gap-4 p-4" : "p-4"}>
-                                {/* Product Image */}
-                                <div className={viewMode === "list" ? "w-24 h-24 flex-shrink-0" : "w-full h-48 mb-4"}>
-                                    <img
-                                        src={product.imageUrl}
-                                        alt={product.name}
-                                        className="w-full h-full object-cover rounded-lg bg-gray-100"
-                                    />
-                                </div>
-
-                                {/* Product Info */}
-                                <div className={viewMode === "list" ? "flex-1" : ""}>
-                                    <h3 className="font-semibold text-lg mb-2 line-clamp-2">{product.name}</h3>
-                                    <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-                                    <p className="text-xs text-gray-500 mb-3">SKU: {product.sku}</p>
-
-                                    {/* Add to Cart Button */}
-                                    <Button
-                                        color="primary"
-                                        onPress={() => handleAddToCart(product)}
-                                        startContent={<Icon icon="lucide:shopping-cart" className="w-4 h-4"/>}
-                                        className="w-full"
-                                    >
-                                        Add to Cart
-                                    </Button>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    ))}
+                    {filteredAndSortedProducts.map((product) => <ProductItem product={product} viewMode={viewMode} onAddToCart={handleAddToCart} />)}
                 </div>
             )}
         </div>
     );
 };
+
 
 export default Products;
