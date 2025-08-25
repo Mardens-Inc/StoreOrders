@@ -1,13 +1,15 @@
 import React, {useState} from "react";
 import {Navigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Divider, Form, Input} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Divider, Form, Input, Tooltip} from "@heroui/react";
 import {useAuth} from "../../providers/AuthProvider";
+import {Icon} from "@iconify-icon/react";
 
 const Login: React.FC = () =>
 {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const {login, isAuthenticated, isLoading: authLoading} = useAuth();
 
@@ -90,7 +92,7 @@ const Login: React.FC = () =>
                         />
 
                         <Input
-                            type="password"
+                            type={showPassword ? "text" : "password"}
                             label="Password"
                             placeholder="Enter your password"
                             value={password}
@@ -101,6 +103,17 @@ const Login: React.FC = () =>
                                 input: "text-sm",
                                 label: "text-sm font-medium"
                             }}
+                            endContent={
+                                <Tooltip content={`${showPassword ? "Hide" : "Show"} password`}>
+                                    <Button
+                                        variant={"light"}
+                                        isIconOnly
+                                        onPress={() => setShowPassword(prev => !prev)}
+                                    >
+                                        <Icon icon={showPassword ? "mage:eye-off" : "mage:eye-fill"}/>
+                                    </Button>
+                                </Tooltip>
+                            }
                         />
 
                         {error && (

@@ -1,50 +1,10 @@
+use rust_decimal::Decimal;
 use crate::products::products_data::{ProductFilter, ProductRecord, ProductWithCategory};
 use sqlx::{Executor, MySqlPool};
 use tokio::fs;
 
 pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
-    // First, check if products table exists and modify it if needed
-    let table_exists = sqlx::query_scalar::<_, i32>(
-        "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'products'"
-    )
-    .fetch_one(pool)
-    .await? > 0;
-
-    if table_exists {
-        // Check if price column exists and drop it if it does
-        let price_column_exists = sqlx::query_scalar::<_, i32>(
-            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'price'"
-        )
-        .fetch_one(pool)
-        .await? > 0;
-
-        if price_column_exists {
-            pool.execute("ALTER TABLE products DROP COLUMN price").await?;
-        }
-
-        // Check if in_stock column exists and drop it if it does
-        let in_stock_column_exists = sqlx::query_scalar::<_, i32>(
-            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'in_stock'"
-        )
-        .fetch_one(pool)
-        .await? > 0;
-
-        if in_stock_column_exists {
-            pool.execute("ALTER TABLE products DROP COLUMN in_stock").await?;
-        }
-
-        // Check if stock_quantity column exists and drop it if it does
-        let stock_quantity_column_exists = sqlx::query_scalar::<_, i32>(
-            "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'stock_quantity'"
-        )
-        .fetch_one(pool)
-        .await? > 0;
-
-        if stock_quantity_column_exists {
-            pool.execute("ALTER TABLE products DROP COLUMN stock_quantity").await?;
-        }
-    }
-
+    // Ensure products table exists with required columns
     pool.execute(
         r#"
         CREATE TABLE IF NOT EXISTS `products` (
@@ -54,6 +14,9 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
             `sku` VARCHAR(100) NOT NULL UNIQUE,
             `category_id` BIGINT UNSIGNED NOT NULL,
             `image_url` VARCHAR(500),
+            `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+            `in_stock` BOOLEAN NOT NULL DEFAULT TRUE,
+            `stock_quantity` INT NOT NULL DEFAULT 0,
             `is_active` BOOLEAN NOT NULL DEFAULT TRUE,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -67,6 +30,38 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
         "#,
     )
     .await?;
+
+    // If table exists already, ensure required columns are present
+    // price
+    let price_column_exists = sqlx::query_scalar::<_, i32>(
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'price'"
+    )
+    .fetch_one(pool)
+    .await? > 0;
+    if !price_column_exists {
+        pool.execute("ALTER TABLE products ADD COLUMN `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00 AFTER image_url").await?;
+    }
+
+    // in_stock
+    let in_stock_column_exists = sqlx::query_scalar::<_, i32>(
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'in_stock'"
+    )
+    .fetch_one(pool)
+    .await? > 0;
+    if !in_stock_column_exists {
+        pool.execute("ALTER TABLE products ADD COLUMN `in_stock` BOOLEAN NOT NULL DEFAULT TRUE AFTER price").await?;
+    }
+
+    // stock_quantity
+    let stock_quantity_column_exists = sqlx::query_scalar::<_, i32>(
+        "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'products' AND column_name = 'stock_quantity'"
+    )
+    .fetch_one(pool)
+    .await? > 0;
+    if !stock_quantity_column_exists {
+        pool.execute("ALTER TABLE products ADD COLUMN `stock_quantity` INT NOT NULL DEFAULT 0 AFTER in_stock").await?;
+    }
+
     fs::create_dir_all("products").await?;
 
     Ok(())
@@ -82,6 +77,9 @@ struct ProductWithCategoryQuery {
     sku: String,
     category_id: u64,
     image_url: Option<String>,
+    price: Decimal,
+    in_stock: bool,
+    stock_quantity: i32,
     is_active: bool,
     created_at: chrono::NaiveDateTime,
     updated_at: chrono::NaiveDateTime,
@@ -99,6 +97,9 @@ impl From<ProductWithCategoryQuery> for ProductWithCategory {
                 sku: query_result.sku,
                 category_id: query_result.category_id,
                 image_url: query_result.image_url,
+                price: query_result.price,
+                in_stock: query_result.in_stock,
+                stock_quantity: query_result.stock_quantity,
                 is_active: query_result.is_active,
                 created_at: query_result.created_at,
                 updated_at: query_result.updated_at,
@@ -213,11 +214,12 @@ impl ProductRecord {
         sku: &str,
         category_id: u64,
         image_url: Option<&str>,
+        price: Decimal,
     ) -> anyhow::Result<ProductRecord> {
         let result = sqlx::query(
             r#"
-            INSERT INTO `products` (`name`, `description`, `sku`, `category_id`, `image_url`)
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO `products` (`name`, `description`, `sku`, `category_id`, `image_url`, `price`)
+            VALUES (?, ?, ?, ?, ?, ?)
             "#
         )
         .bind(name)
@@ -225,6 +227,7 @@ impl ProductRecord {
         .bind(sku)
         .bind(category_id)
         .bind(image_url)
+        .bind(price)
         .execute(pool)
         .await?;
 
@@ -243,75 +246,42 @@ impl ProductRecord {
         category_id: Option<u64>,
         image_url: Option<&str>,
         is_active: Option<bool>,
+        price: Option<Decimal>,
     ) -> anyhow::Result<Option<ProductRecord>> {
         let mut query = "UPDATE products SET ".to_string();
         let mut updates = Vec::new();
         let mut bind_count = 0;
 
-        if name.is_some() {
-            updates.push("name = ?");
-            bind_count += 1;
-        }
-        if description.is_some() {
-            updates.push("description = ?");
-            bind_count += 1;
-        }
-        if sku.is_some() {
-            updates.push("sku = ?");
-            bind_count += 1;
-        }
-        if category_id.is_some() {
-            updates.push("category_id = ?");
-            bind_count += 1;
-        }
-        if image_url.is_some() {
-            updates.push("image_url = ?");
-            bind_count += 1;
-        }
-        if is_active.is_some() {
-            updates.push("is_active = ?");
-            bind_count += 1;
-        }
+        if name.is_some() { updates.push("name = ?"); bind_count += 1; }
+        if description.is_some() { updates.push("description = ?"); bind_count += 1; }
+        if sku.is_some() { updates.push("sku = ?"); bind_count += 1; }
+        if category_id.is_some() { updates.push("category_id = ?"); bind_count += 1; }
+        if image_url.is_some() { updates.push("image_url = ?"); bind_count += 1; }
+        if is_active.is_some() { updates.push("is_active = ?"); bind_count += 1; }
+        if price.is_some() { updates.push("price = ?"); bind_count += 1; }
 
         updates.push("updated_at = CURRENT_TIMESTAMP");
 
-        if bind_count == 0 {
-            return ProductRecord::get_by_id_simple(pool, id).await;
-        }
+        if bind_count == 0 { return ProductRecord::get_by_id_simple(pool, id).await; }
 
         query.push_str(&updates.join(", "));
         query.push_str(" WHERE id = ?");
 
         let mut query_builder = sqlx::query(&query);
 
-        // Bind all the update values in order
-        if let Some(name_val) = name {
-            query_builder = query_builder.bind(name_val);
-        }
-        if let Some(desc_val) = description {
-            query_builder = query_builder.bind(desc_val);
-        }
-        if let Some(sku_val) = sku {
-            query_builder = query_builder.bind(sku_val);
-        }
-        if let Some(cat_id_val) = category_id {
-            query_builder = query_builder.bind(cat_id_val);
-        }
-        if let Some(img_val) = image_url {
-            query_builder = query_builder.bind(img_val);
-        }
-        if let Some(active_val) = is_active {
-            query_builder = query_builder.bind(active_val);
-        }
+        if let Some(v) = name { query_builder = query_builder.bind(v); }
+        if let Some(v) = description { query_builder = query_builder.bind(v); }
+        if let Some(v) = sku { query_builder = query_builder.bind(v); }
+        if let Some(v) = category_id { query_builder = query_builder.bind(v); }
+        if let Some(v) = image_url { query_builder = query_builder.bind(v); }
+        if let Some(v) = is_active { query_builder = query_builder.bind(v); }
+        if let Some(v) = price { query_builder = query_builder.bind(v); }
 
-        // Bind the product_id for WHERE clause
         query_builder = query_builder.bind(id);
 
         let result = query_builder.execute(pool).await?;
 
-        if result.rows_affected() == 0 {
-            return Ok(None);
-        }
+        if result.rows_affected() == 0 { return Ok(None); }
 
         ProductRecord::get_by_id_simple(pool, id).await
     }
@@ -332,7 +302,7 @@ impl ProductRecord {
     ) -> anyhow::Result<Option<ProductRecord>> {
         let product = sqlx::query_as::<_, ProductRecord>(
             r#"
-            SELECT id, name, description, sku, category_id, image_url,
+            SELECT id, name, description, sku, category_id, image_url, price, in_stock, stock_quantity,
                    is_active, created_at, updated_at
             FROM `products`
             WHERE id = ?

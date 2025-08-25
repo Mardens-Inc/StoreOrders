@@ -1,7 +1,12 @@
 // API utility for making authenticated requests
+import {Category} from "../components/pages/Categories.tsx";
+import {Product} from "../providers/CartProvider.tsx";
+import {StoreOrderRecordDto} from "./types.ts";
+import {OrderWithItemsDto} from "./types.ts";
+
 const API_BASE_URL = "/api";
 
-interface ApiResponse<T = any>
+export interface ApiResponse<T = any>
 {
     success: boolean;
     data?: T;
@@ -107,16 +112,16 @@ export const authApi = {
 };
 
 export const ordersApi = {
-    getOrders: () => apiClient.get<ApiResponse>("/orders"),
+    getOrders: () => apiClient.get<ApiResponse<StoreOrderRecordDto[]>>("/orders"),
 
-    getStoreOrders: (storeId: string) => apiClient.get<ApiResponse>(`/orders/store/${storeId}`),
+    getStoreOrders: (storeId: string) => apiClient.get<ApiResponse<StoreOrderRecordDto[]>>(`/orders/store/${storeId}`),
 
-    getOrder: (orderId: string) => apiClient.get<ApiResponse>(`/orders/${orderId}`),
+    getOrder: (orderId: string) => apiClient.get<ApiResponse<OrderWithItemsDto>>(`/orders/${orderId}`),
 
-    createOrder: (order: any) => apiClient.post<ApiResponse>("/orders", order),
+    createOrder: (order: any) => apiClient.post<ApiResponse<OrderWithItemsDto>>("/orders", order),
 
     updateOrderStatus: (orderId: string, status: string, notes?: string) =>
-        apiClient.put<ApiResponse>(`/orders/${orderId}/status`, {status, notes}),
+        apiClient.put<ApiResponse<OrderWithItemsDto>>(`/orders/${orderId}/status`, {status, notes}),
 
     addToCart: (productId: string, quantity: number) =>
         apiClient.post<ApiResponse>("/orders/cart/add", {product_id: productId, quantity})
@@ -126,7 +131,7 @@ export const productsApi = {
     getProducts: (filters?: any) =>
     {
         const params = new URLSearchParams(filters);
-        return apiClient.get<ApiResponse>(`/products?${params}`);
+        return apiClient.get<ApiResponse<Product[]>>(`/products?${params}`);
     },
 
     getProduct: (productId: string) => apiClient.get<ApiResponse>(`/products/${productId}`),
@@ -150,7 +155,7 @@ export const productsApi = {
 export const categoriesApi = {
     getCategories: () => apiClient.get<ApiResponse>("/categories"),
 
-    getCategory: (categoryId: string) => apiClient.get<ApiResponse>(`/categories/${categoryId}`),
+    getCategory: (categoryId: string) => apiClient.get<ApiResponse<Category>>(`/categories/${categoryId}`),
 
     // Admin only
     createCategory: (category: any) => apiClient.post<ApiResponse>("/categories", category),
@@ -160,4 +165,12 @@ export const categoriesApi = {
 
     deleteCategory: (categoryId: string) =>
         apiClient.delete<ApiResponse>(`/categories/${categoryId}`)
+};
+
+export const storesApi = {
+    getStores: (filters?: Record<string, string>) => {
+        const params = filters ? `?${new URLSearchParams(filters)}` : "";
+        return apiClient.get<ApiResponse>(`/stores${params}`);
+    },
+    getStore: (storeId: string) => apiClient.get<ApiResponse>(`/stores/${storeId}`)
 };

@@ -1,6 +1,8 @@
 use sqlx::{Executor, MySqlPool, Row};
 use crate::orders::orders_data::{StoreOrderRecord, OrderItemRecord, OrderWithItems, OrderItemWithProduct, UserContext};
 use crate::orders::store_order_status::StoreOrderStatus;
+use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 
 // Define a custom struct for the order items with products query
 #[derive(sqlx::FromRow)]
@@ -10,8 +12,8 @@ struct OrderItemWithProductQuery {
     order_id: u64,
     product_id: u64,
     quantity: i32,
-    unit_price: f32,
-    total_price: f32,
+    unit_price: Decimal,
+    total_price: Decimal,
     created_at: chrono::NaiveDateTime,
     // Product fields
     product_name: String,
@@ -47,7 +49,7 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
             `order_number` VARCHAR(50) NOT NULL UNIQUE,
             `user_id` BIGINT UNSIGNED NOT NULL,
             `store_id` BIGINT UNSIGNED NOT NULL,
-            `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+            `status` ENUM('PENDING','SHIPPED','DELIVERED') NOT NULL DEFAULT 'PENDING',
             `total_amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
             `notes` TEXT,
             `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -63,6 +65,11 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
         "#,
     )
     .await?;
+
+    // Normalize any existing values and enforce ENUM set regardless of current type
+    pool.execute("UPDATE orders SET status = UPPER(status)").await.ok();
+    pool.execute("UPDATE orders SET status = 'PENDING' WHERE status NOT IN ('PENDING','SHIPPED','DELIVERED')").await.ok();
+    pool.execute("ALTER TABLE orders MODIFY COLUMN `status` ENUM('PENDING','SHIPPED','DELIVERED') NOT NULL DEFAULT 'PENDING'").await.ok();
 
     // Create order_items table
     pool.execute(
@@ -89,10 +96,24 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
 }
 
 impl StoreOrderRecord {
+
+    pub async fn get_all(pool: &MySqlPool) -> anyhow::Result<Vec<Self>> {
+        let orders = sqlx::query_as::<_, Self>(
+            r#"
+            SELECT *
+            FROM `orders`
+            ORDER BY `created_at` DESC
+            "#
+        )
+        .fetch_all(pool);
+        Ok(orders.await?)
+    }
     pub async fn get_orders_for_user(pool: &MySqlPool, user_id: u64) -> anyhow::Result<Vec<Self>> {
         let orders = sqlx::query_as::<_, Self>(
             r#"
-            SELECT * FROM `orders`
+            SELECT id, order_number, user_id, store_id, status, total_amount,
+                   notes, created_at, updated_at, status_changed_to_pending, status_changed_to_completed
+            FROM `orders`
             WHERE `user_id` = ?
             ORDER BY `created_at` DESC
             "#
@@ -107,7 +128,9 @@ impl StoreOrderRecord {
     pub async fn get_orders_for_store(pool: &MySqlPool, store_id: u64) -> anyhow::Result<Vec<Self>> {
         let orders = sqlx::query_as::<_, Self>(
             r#"
-            SELECT * FROM `orders`
+            SELECT id, order_number, user_id, store_id, status, total_amount,
+                   notes, created_at, updated_at, status_changed_to_pending, status_changed_to_completed
+            FROM `orders`
             WHERE `store_id` = ?
             ORDER BY `created_at` DESC
             "#
@@ -122,7 +145,9 @@ impl StoreOrderRecord {
     pub async fn get_by_id(pool: &MySqlPool, id: u64) -> anyhow::Result<Option<Self>> {
         let order = sqlx::query_as::<_, Self>(
             r#"
-            SELECT * FROM `orders`
+            SELECT id, order_number, user_id, store_id, status, total_amount,
+                   notes, created_at, updated_at, status_changed_to_pending, status_changed_to_completed
+            FROM `orders`
             WHERE `id` = ?
             "#
         )
@@ -157,14 +182,15 @@ impl StoreOrderRecord {
         let order_number = Self::generate_order_number().await;
 
         // Calculate total amount
-        let mut total_amount = 0.0f32;
+        let mut total_amount: Decimal = Decimal::from_i32(0).unwrap();
         for (product_id, quantity) in items {
             let price_row = sqlx::query("SELECT price FROM products WHERE id = ?")
                 .bind(product_id)
                 .fetch_one(&mut *transaction)
                 .await?;
-            let unit_price: f32 = price_row.get("price");
-            total_amount += unit_price * (*quantity as f32);
+            let unit_price: Decimal = price_row.get("price");
+            let qty = Decimal::from_i32(*quantity).unwrap_or_else(|| Decimal::from_i32(0).unwrap());
+            total_amount += unit_price * qty;
         }
 
         // Create order
@@ -190,8 +216,9 @@ impl StoreOrderRecord {
                 .bind(product_id)
                 .fetch_one(&mut *transaction)
                 .await?;
-            let unit_price: f32 = price_row.get("price");
-            let total_price = unit_price * (*quantity as f32);
+            let unit_price: Decimal = price_row.get("price");
+            let qty = Decimal::from_i32(*quantity).unwrap_or_else(|| Decimal::from_i32(0).unwrap());
+            let total_price = unit_price * qty;
 
             sqlx::query(
                 r#"
@@ -234,7 +261,7 @@ impl StoreOrderRecord {
         notes: Option<&str>,
     ) -> anyhow::Result<bool> {
         let mut query = String::from("UPDATE `orders` SET `status` = ?");
-        let mut params = vec![status.to_string()];
+        let mut params: Vec<String> = vec![status.as_db_str().to_string()];
 
         if let Some(n) = notes {
             query.push_str(", `notes` = ?");
@@ -279,7 +306,10 @@ impl OrderItemRecord {
         let query_results = sqlx::query_as::<_, OrderItemWithProductQuery>(
             r#"
             SELECT
-                oi.id, oi.order_id, oi.product_id, oi.quantity, oi.unit_price, oi.total_price, oi.created_at,
+                oi.id, oi.order_id, oi.product_id, oi.quantity,
+                oi.unit_price AS unit_price,
+                oi.total_price AS total_price,
+                oi.created_at,
                 p.name as product_name,
                 p.sku as product_sku,
                 p.image_url as product_image_url

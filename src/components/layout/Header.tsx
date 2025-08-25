@@ -16,12 +16,19 @@ const Header: React.FC = () =>
 
     const getUserDisplayName = () =>
     {
-        if (!user) return "";
-        // Extract name from email (e.g., "john.doe@mardens.com" -> "John Doe")
-        const emailPart = user.email.split("@")[0];
-        return emailPart.split(".").map(part =>
-            part.charAt(0).toUpperCase() + part.slice(1)
-        ).join(" ");
+        try
+        {
+            if (!user) return " "; // Return a single space character so the name doesn't break layout
+            // Extract name from email (e.g., "john.doe@mardens.com" -> "John Doe")
+            const emailPart = user.email.split("@")[0];
+            return emailPart.split(".").map(part =>
+                part.charAt(0).toUpperCase() + part.slice(1)
+            ).join(" ");
+        } catch (e)
+        {
+            console.error("Error getting user display name:", e);
+            return " ";
+        }
     };
 
     const getRoleColor = (role: string) =>
@@ -57,26 +64,26 @@ const Header: React.FC = () =>
 
             <NavbarContent justify="end">
                 {user?.role === "store" &&
-                        <>
-                            {/* Cart Button */}
-                            <NavbarItem>
-                                <Badge
-                                    content={getTotalItems()}
-                                    color="primary"
-                                    isInvisible={getTotalItems() === 0}
-                                    shape="circle"
+                    <>
+                        {/* Cart Button */}
+                        <NavbarItem>
+                            <Badge
+                                content={getTotalItems()}
+                                color="primary"
+                                isInvisible={getTotalItems() === 0}
+                                shape="circle"
+                            >
+                                <Button
+                                    variant="light"
+                                    isIconOnly
+                                    onPress={() => setIsOpen(true)}
+                                    className="text-gray-600 hover:text-gray-900"
                                 >
-                                    <Button
-                                        variant="light"
-                                        isIconOnly
-                                        onPress={() => setIsOpen(true)}
-                                        className="text-gray-600 hover:text-gray-900"
-                                    >
-                                        <Icon icon="lucide:shopping-cart" className="w-5 h-5"/>
-                                    </Button>
-                                </Badge>
-                            </NavbarItem>
-                        </>
+                                    <Icon icon="lucide:shopping-cart" className="w-5 h-5"/>
+                                </Button>
+                            </Badge>
+                        </NavbarItem>
+                    </>
                 }
                 {/* Notifications */}
                 <NavbarItem>

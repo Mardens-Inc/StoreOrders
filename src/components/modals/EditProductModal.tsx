@@ -17,6 +17,7 @@ interface CreateProductRequest
     sku: string;
     category_id: string;
     image_url?: string;
+    price: number;
 }
 
 interface EditProductModalProps
@@ -57,6 +58,11 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                     <>
                         <ModalHeader>Edit Product</ModalHeader>
                         <ModalBody className="space-y-4">
+                            <ImageUpload
+                                onImageSelect={onImageSelect}
+                                currentImageUrl={`${formData.image_url}?v=${Date.now()}`}
+                                disabled={uploadingImage}
+                            />
                             <Input
                                 label="Product Name"
                                 placeholder="Enter product name"
@@ -81,6 +87,17 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                 isRequired
                             />
 
+                            <Input
+                                type="number"
+                                label="Price"
+                                placeholder="0.00"
+                                value={formData.price?.toString() ?? ""}
+                                onChange={(e) => setFormData(prev => ({...prev, price: parseFloat(e.target.value) || 0}))}
+                                isRequired
+                                min={0}
+                                step={0.01}
+                            />
+
                             <Select
                                 label="Category"
                                 placeholder="Select a category"
@@ -98,12 +115,6 @@ const EditProductModal: React.FC<EditProductModalProps> = ({
                                     </SelectItem>
                                 ))}
                             </Select>
-
-                            <ImageUpload
-                                onImageSelect={onImageSelect}
-                                currentImageUrl={formData.image_url}
-                                disabled={uploadingImage}
-                            />
                         </ModalBody>
                         <ModalFooter>
                             <Button

@@ -25,8 +25,8 @@ const CartSidebar: React.FC = () =>
 
     const handleCheckout = () =>
     {
-        // Navigate to checkout or create order
-        console.log("Proceeding to checkout with items:", items);
+        // Navigate to cart for checkout flow
+        navigate("/app/cart");
         setIsOpen(false);
     };
 

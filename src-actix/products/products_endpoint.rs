@@ -88,6 +88,7 @@ pub async fn create_product(
         &request.sku,
         category_id,
         request.image_url.as_deref(),
+        request.price,
     ).await?;
 
     Ok(HttpResponse::Created().json(json!({
@@ -135,6 +136,7 @@ pub async fn update_product(
         category_id,
         request.image_url.as_deref(),
         request.is_active,
+        request.price,
     ).await? {
         Some(product) => Ok(HttpResponse::Ok().json(json!({
             "success": true,

@@ -1,6 +1,7 @@
 use crate::auth::{jwt_validator, ClaimsExtractor, UserRole};
 use crate::orders::orders_data::{
-    AddToCartRequest, CreateOrderRequest, StoreOrderRecord, UpdateOrderStatusRequest, UserContext,
+    AddToCartRequest, CreateOrderRequest, OrderWithItemsDto, StoreOrderRecord, StoreOrderRecordDto,
+    UpdateOrderStatusRequest, UserContext,
 };
 use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Responder};
 use actix_web_httpauth::middleware::HttpAuthentication;
@@ -14,16 +15,29 @@ pub async fn get_orders(
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
 
-    let claims = req.get_claims().ok_or_else(|| {
-        anyhow::anyhow!("Authentication required")
-    })?;
-
-    let orders = StoreOrderRecord::get_orders_for_user(&pool, claims.sub).await?;
-
-    Ok(HttpResponse::Ok().json(json!({
-        "success": true,
-        "data": orders
-    })))
+    let claims = req
+        .get_claims()
+        .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
+    if claims.role == "admin" {
+        let orders = StoreOrderRecord::get_all(&pool).await?;
+        let dto: Vec<StoreOrderRecordDto> = orders.iter().map(|o| o.into()).collect();
+        Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "data": dto
+        })))
+    } else if let Some(store_id) = claims.store_id {
+        let orders = StoreOrderRecord::get_orders_for_store(&pool, store_id).await?;
+        let dto: Vec<StoreOrderRecordDto> = orders.iter().map(|o| o.into()).collect();
+        Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "data": dto
+        })))
+    } else {
+        Ok(HttpResponse::Forbidden().json(json!({
+            "success": false,
+            "error": "Access denied: You can only view orders for your store"
+        })))
+    }
 }
 
 #[get("/store/{store_id}")]
@@ -35,14 +49,14 @@ pub async fn get_store_orders(
     let pool = connection_data.get_pool().await?;
     let store_id = serde_hash::hashids::decode_single(path.as_str())?;
 
-    let claims = req.get_claims().ok_or_else(|| {
-        anyhow::anyhow!("Authentication required")
-    })?;
+    let claims = req
+        .get_claims()
+        .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
 
     // Only allow access if user is admin or belongs to this store
     let role = UserRole::from_str(&claims.role)?;
     match role {
-        UserRole::Admin => {}, // Admins can access any store
+        UserRole::Admin => {} // Admins can access any store
         UserRole::Store => {
             if claims.store_id != Some(store_id) {
                 return Ok(HttpResponse::Forbidden().json(json!({
@@ -54,10 +68,10 @@ pub async fn get_store_orders(
     }
 
     let orders = StoreOrderRecord::get_orders_for_store(&pool, store_id).await?;
-
+    let dto: Vec<StoreOrderRecordDto> = orders.iter().map(|o| o.into()).collect();
     Ok(HttpResponse::Ok().json(json!({
         "success": true,
-        "data": orders
+        "data": dto
     })))
 }
 
@@ -70,10 +84,13 @@ pub async fn get_order(
     let order_id = serde_hash::hashids::decode_single(path.as_str())?;
 
     match StoreOrderRecord::get_with_items(&pool, order_id).await? {
-        Some(order) => Ok(HttpResponse::Ok().json(json!({
-            "success": true,
-            "data": order
-        }))),
+        Some(order) => {
+            let dto = OrderWithItemsDto::from(&order);
+            Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "data": dto
+            })))
+        }
         None => Ok(HttpResponse::NotFound().json(json!({
             "success": false,
             "error": "Order not found"
@@ -89,9 +106,9 @@ pub async fn create_order(
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
 
-    let claims = req.get_claims().ok_or_else(|| {
-        anyhow::anyhow!("Authentication required")
-    })?;
+    let claims = req
+        .get_claims()
+        .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
 
     let store_id = serde_hash::hashids::decode_single(&request.store_id)?;
 
@@ -105,11 +122,7 @@ pub async fn create_order(
     }
 
     // Create user context from JWT claims
-    let user_context = UserContext::from_claims(
-        claims.sub,
-        claims.store_id,
-        claims.role.clone(),
-    );
+    let user_context = UserContext::from_claims(claims.sub, claims.store_id, claims.role.clone());
 
     // Convert items to (product_id, quantity) tuples
     let mut items = Vec::new();
@@ -130,16 +143,17 @@ pub async fn create_order(
     let order = StoreOrderRecord::get_with_items(&pool, order_id)
         .await?
         .ok_or_else(|| anyhow::anyhow!("Failed to retrieve created order"))?;
-
+    let dto = OrderWithItemsDto::from(&order);
     Ok(HttpResponse::Created().json(json!({
         "success": true,
-        "data": order,
+        "data": dto,
         "message": "Order created successfully"
     })))
 }
 
 #[put("/{id}/status")]
 pub async fn update_order_status(
+    req: HttpRequest,
     connection_data: web::Data<DatabaseConnectionData>,
     path: web::Path<String>,
     request: web::Json<UpdateOrderStatusRequest>,
@@ -147,22 +161,92 @@ pub async fn update_order_status(
     let pool = connection_data.get_pool().await?;
     let order_id = serde_hash::hashids::decode_single(path.as_str())?;
 
-    let updated = StoreOrderRecord::update_status(
-        &pool,
-        order_id,
-        request.status.clone(),
-        request.notes.as_deref(),
-    )
-    .await?;
+    // Require authentication and extract role/store ownership
+    let claims = req
+        .get_claims()
+        .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
+    let role = UserRole::from_str(&claims.role)?;
+
+    // Load current order to enforce ownership and transitions
+    let existing = StoreOrderRecord::get_by_id(&pool, order_id).await?;
+    let Some(existing_order) = existing else {
+        return Ok(HttpResponse::NotFound().json(json!({
+            "success": false,
+            "error": "Order not found"
+        })));
+    };
+
+    // Ownership: store users can only modify orders for their own store
+    match role {
+        UserRole::Admin => { /* allowed */ }
+        UserRole::Store => {
+            if claims.store_id != Some(existing_order.store_id) {
+                return Ok(HttpResponse::Forbidden().json(json!({
+                    "success": false,
+                    "error": "Access denied: You can only update orders for your store"
+                })));
+            }
+        }
+    }
+
+    // Enforce allowed status transitions per role
+    use crate::orders::store_order_status::StoreOrderStatus;
+    let target_status = request.status.clone();
+
+    match role {
+        UserRole::Admin => {
+            // Admins can change orders from Pending to Shipped or Delivered only
+            if existing_order.status != StoreOrderStatus::Pending {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "success": false,
+                    "error": "Only orders in Pending status can be updated by admin"
+                })));
+            }
+            if !(matches!(
+                target_status,
+                StoreOrderStatus::Shipped | StoreOrderStatus::Delivered
+            )) {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "success": false,
+                    "error": "Admin can only set status to Shipped or Delivered"
+                })));
+            }
+        }
+        UserRole::Store => {
+            // Store can only mark as Delivered
+            if target_status != StoreOrderStatus::Delivered {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "success": false,
+                    "error": "Store can only set status to Delivered"
+                })));
+            }
+            // Optional: prevent redundant updates
+            if existing_order.status == StoreOrderStatus::Delivered {
+                let current = StoreOrderRecord::get_with_items(&pool, order_id).await?;
+                if let Some(o) = current {
+                    let dto = OrderWithItemsDto::from(&o);
+                    return Ok(HttpResponse::Ok().json(json!({
+                        "success": true,
+                        "data": dto,
+                        "message": "Order already delivered"
+                    })));
+                }
+            }
+        }
+    }
+
+    let updated =
+        StoreOrderRecord::update_status(&pool, order_id, target_status, request.notes.as_deref())
+            .await?;
 
     if updated {
         let order = StoreOrderRecord::get_with_items(&pool, order_id)
             .await?
             .ok_or_else(|| anyhow::anyhow!("Order not found after update"))?;
-
+        let dto = OrderWithItemsDto::from(&order);
         Ok(HttpResponse::Ok().json(json!({
             "success": true,
-            "data": order,
+            "data": dto,
             "message": "Order status updated successfully"
         })))
     } else {
@@ -181,9 +265,9 @@ pub async fn add_to_cart(
 ) -> Result<impl Responder> {
     let pool = connection_data.get_pool().await?;
 
-    let claims = req.get_claims().ok_or_else(|| {
-        anyhow::anyhow!("Authentication required")
-    })?;
+    let claims = req
+        .get_claims()
+        .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
 
     let product_id = serde_hash::hashids::decode_single(&request.product_id)?;
 

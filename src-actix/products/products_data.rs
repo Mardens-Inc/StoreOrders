@@ -1,3 +1,4 @@
+use rust_decimal::prelude::ToPrimitive;
 use serde::{Deserialize, Serialize};
 use serde_hash::hashids::{decode_single, encode_single};
 use sqlx::FromRow;
@@ -18,6 +19,11 @@ pub struct ProductRecord {
     )]
     pub category_id: u64,
     pub image_url: Option<String>,
+    // Added fields used by orders/cart
+    #[serde(serialize_with = "serialize_decimal_to_f32")]
+    pub price: rust_decimal::Decimal,
+    pub in_stock: bool,
+    pub stock_quantity: i32,
     pub is_active: bool,
     pub created_at: chrono::NaiveDateTime,
     pub updated_at: chrono::NaiveDateTime,
@@ -37,6 +43,7 @@ pub struct CreateProductRequest {
     pub sku: String,
     pub category_id: String, // hashed ID
     pub image_url: Option<String>,
+    pub price: rust_decimal::Decimal,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -47,6 +54,7 @@ pub struct UpdateProductRequest {
     pub category_id: Option<String>, // hashed ID
     pub image_url: Option<String>,
     pub is_active: Option<bool>,
+    pub price: Option<rust_decimal::Decimal>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -72,4 +80,11 @@ where
     use serde::Deserialize;
     let hash = String::deserialize(deserializer)?;
     decode_single(&hash).map_err(|_| serde::de::Error::custom("Failed to decode hash ID"))
+}
+
+fn serialize_decimal_to_f32<S>(value: &rust_decimal::Decimal, serializer: S) -> Result<S::Ok, S::Error>
+                               where
+    S: serde::Serializer,
+{
+    value.to_f32().serialize(serializer)
 }

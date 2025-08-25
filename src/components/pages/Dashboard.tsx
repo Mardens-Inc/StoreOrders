@@ -17,6 +17,7 @@ type QuickAction = {
 
 const Dashboard: React.FC = () =>
 {
+    document.title = "Dashboard - Store Orders";
     const navigate = useNavigate();
     const {user} = useAuth();
     const {getTotalItems} = useCart();

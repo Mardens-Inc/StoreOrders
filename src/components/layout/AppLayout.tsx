@@ -1,5 +1,5 @@
-import React from "react";
-import {Navigate, Route, Routes} from "react-router-dom";
+import React, {useEffect} from "react";
+import {Route, Routes, useNavigate} from "react-router-dom";
 import {useAuth} from "../../providers/AuthProvider";
 import Sidebar from "./Sidebar";
 import Header from "./Header";
@@ -16,11 +16,13 @@ import CartSidebar from "../cart/CartSidebar";
 const AppLayout: React.FC = () =>
 {
     const {isAuthenticated} = useAuth();
+    const navigate = useNavigate();
 
-    if (!isAuthenticated)
+    useEffect(() =>
     {
-        return <Navigate to="/" replace/>;
-    }
+        if (isAuthenticated === undefined) return;
+        if (!isAuthenticated) navigate("/");
+    }, [isAuthenticated]);
 
     return (
         <div className="flex h-screen bg-gray-50">

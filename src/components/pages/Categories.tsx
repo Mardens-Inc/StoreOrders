@@ -20,6 +20,7 @@ interface CategoryWithCount extends Category
 
 const Categories: React.FC = () =>
 {
+    document.title = "Categories - Store Orders";
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [categories, setCategories] = useState<CategoryWithCount[]>([]);

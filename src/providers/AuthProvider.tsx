@@ -1,4 +1,4 @@
-import React, {createContext, ReactNode, useContext, useEffect, useState} from "react";
+import React, {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
 
 interface User
 {
@@ -21,7 +21,7 @@ interface AuthContextType
     user: User | null;
     login: (email: string, password: string) => Promise<boolean>;
     logout: () => void;
-    isAuthenticated: boolean;
+    isAuthenticated: boolean|undefined;
     isLoading: boolean;
     token: string | null;
 }
@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const hasAttemptedFirstLogin = useRef(false)
 
     // Helper function to check if a JWT token is expired
     const isTokenExpired = (token: string): boolean =>
@@ -97,6 +98,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
             localStorage.setItem("auth_token", authData.token);
             localStorage.setItem("auth_refresh_token", authData.refresh_token);
             localStorage.setItem("auth_user", JSON.stringify(authData.user));
+            hasAttemptedFirstLogin.current = true;
 
             return authData.token;
         } catch (error)
@@ -188,6 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
                 store_id: userData.store_id,
                 created_at: userData.created_at || new Date().toISOString()
             });
+            hasAttemptedFirstLogin.current = true;
         } catch (error)
         {
             console.error("Token validation failed:", error);
@@ -225,6 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
             localStorage.setItem("auth_token", authData.token);
             localStorage.setItem("auth_refresh_token", authData.refresh_token);
             localStorage.setItem("auth_user", JSON.stringify(authData.user));
+            hasAttemptedFirstLogin.current = true;
 
             return true;
         } catch (error)
@@ -250,7 +254,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
         user,
         login,
         logout,
-        isAuthenticated: !!user && !!token,
+        isAuthenticated: !hasAttemptedFirstLogin.current ? undefined : !!user && !!token,
         isLoading,
         token
     };

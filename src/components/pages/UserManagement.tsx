@@ -33,6 +33,7 @@ interface CreateUserRequest
 
 const UserManagement: React.FC = () =>
 {
+    document.title = "User Management - Store Orders";
     const {user: currentUser} = useAuth();
     const [users, setUsers] = useState<User[]>([]);
     const [stores, setStores] = useState<Store[]>([]);

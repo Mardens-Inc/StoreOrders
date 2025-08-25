@@ -27,6 +27,7 @@ interface CreateProductRequest
     sku: string;
     category_id: string;
     image_url?: string;
+    price: number;
 }
 
 interface UpdateProductRequest
@@ -37,6 +38,7 @@ interface UpdateProductRequest
     category_id?: string;
     image_url?: string;
     is_active?: boolean;
+    price?: number;
 }
 
 interface CreateCategoryRequest
@@ -53,8 +55,18 @@ interface UpdateCategoryRequest
     icon?: string;
 }
 
+const INITIAL_PRODUCT_FORM: CreateProductRequest = {
+    name: "",
+    description: "",
+    sku: "",
+    category_id: "",
+    image_url: "",
+    price: 0
+};
+
 const ProductManagement: React.FC = () =>
 {
+    document.title = "Product Management - Store Orders";
     const {user: currentUser} = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -70,16 +82,11 @@ const ProductManagement: React.FC = () =>
         icon: ""
     });
 
-    const [formData, setFormData] = useState<CreateProductRequest>({
-        name: "",
-        description: "",
-        sku: "",
-        category_id: "",
-        image_url: ""
-    });
+    const [formData, setFormData] = useState<CreateProductRequest>(INITIAL_PRODUCT_FORM);
 
     // Image upload state
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+    const [pendingNewProductImage, setPendingNewProductImage] = useState<File | null>(null); // holds cropped image until product created
     const [uploadingImage, setUploadingImage] = useState(false);
     const {isOpen: isCropModalOpen, onOpen: onCropModalOpen, onOpenChange: onCropModalOpenChange} = useDisclosure();
 
@@ -97,6 +104,24 @@ const ProductManagement: React.FC = () =>
     {
         loadData();
     }, []);
+
+    // Reset form when create modal opens (fresh form each time)
+    useEffect(() => {
+        if (isCreateOpen) {
+            setSelectedProduct(null);
+            setPendingNewProductImage(null);
+            setFormData(INITIAL_PRODUCT_FORM);
+        }
+    }, [isCreateOpen]);
+
+    // When edit modal closes, clear form so it doesn't leak into create modal
+    useEffect(() => {
+        if (!isEditOpen) {
+            setSelectedProduct(null);
+            setPendingNewProductImage(null);
+            setFormData(INITIAL_PRODUCT_FORM);
+        }
+    }, [isEditOpen]);
 
     const loadData = async () =>
     {
@@ -131,19 +156,22 @@ const ProductManagement: React.FC = () =>
         try
         {
             setActionLoading(true);
-            const response = await productsApi.createProduct(formData as CreateProductRequest);
+            // If we have a pending image file, don't send image_url yet (will upload after creation)
+            const {image_url, ...rest} = formData as any;
+            const createPayload = pendingNewProductImage ? rest : formData;
+            const response = await productsApi.createProduct(createPayload as CreateProductRequest);
 
             if (response.success)
             {
+                // If we have a pending image, upload it now using returned product id
+                if (pendingNewProductImage && response.data?.id)
+                {
+                    await uploadProductImage(response.data.id, pendingNewProductImage, true);
+                }
                 await loadData();
                 onCreateOpenChange();
-                setFormData({
-                    name: "",
-                    description: "",
-                    sku: "",
-                    category_id: "",
-                    image_url: ""
-                });
+                setFormData(INITIAL_PRODUCT_FORM);
+                setPendingNewProductImage(null);
             }
         } catch (error)
         {
@@ -167,7 +195,8 @@ const ProductManagement: React.FC = () =>
                 sku: formData.sku || undefined,
                 category_id: formData.category_id || undefined,
                 image_url: formData.image_url || undefined,
-                is_active: true
+                is_active: true,
+                price: formData.price || undefined
             };
             const response = await productsApi.updateProduct(selectedProduct.id, updateData);
 
@@ -239,7 +268,8 @@ const ProductManagement: React.FC = () =>
             description: product.description,
             sku: product.sku,
             category_id: product.category_id,
-            image_url: product.image_url || ""
+            image_url: product.image_url || "",
+            price: product.price || 0
         });
         onEditOpen();
     };
@@ -274,48 +304,51 @@ const ProductManagement: React.FC = () =>
 
         if (croppedFile)
         {
-            try
-            {
-                setUploadingImage(true);
-
-                // Convert file to array buffer and send as raw bytes
-                const fileBuffer = await croppedFile.arrayBuffer();
-
-                // Upload the image
-                const response = await fetch("/api/upload/product-image", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${localStorage.getItem("auth_token")}`,
-                        "Content-Type": "application/octet-stream"
-                    },
-                    body: fileBuffer
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success)
-                {
-                    // Update form data with the uploaded image URL
-                    setFormData(prev => ({
-                        ...prev,
-                        image_url: result.url
-                    }));
-                } else
-                {
-                    console.error("Failed to upload image:", result.error || "Unknown error");
-                    alert("Failed to upload image: " + (result.error || "Unknown error"));
-                }
-            } catch (error)
-            {
-                console.error("Error uploading image:", error);
-                alert("Error uploading image. Please try again.");
-            } finally
-            {
-                setUploadingImage(false);
+            if (selectedProduct) {
+                // Editing existing product: upload immediately
+                await uploadProductImage(selectedProduct.id, croppedFile, false);
+            } else {
+                // Creating new product: store locally until product is created
+                setPendingNewProductImage(croppedFile);
+                const previewUrl = URL.createObjectURL(croppedFile);
+                setFormData(prev => ({...prev, image_url: previewUrl}));
             }
         }
 
         setSelectedImageFile(null);
+    };
+
+    // Helper to upload product image given a hashed product id
+    const uploadProductImage = async (productId: string, file: File, silent: boolean) => {
+        try {
+            if (!silent) setUploadingImage(true);
+            const fileBuffer = await file.arrayBuffer();
+            const response = await fetch(`/api/upload/product-image/${productId}`, {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${localStorage.getItem("auth_token")}`,
+                    "Content-Type": "application/octet-stream"
+                },
+                body: fileBuffer
+            });
+            const result = await response.json().catch(() => ({}));
+            if (response.ok && result.success) {
+                // Update form data image_url if editing
+                setFormData(prev => ({...prev, image_url: result.url}));
+                // If editing existing product, refresh list for immediate UI update
+                if (selectedProduct) {
+                    await loadData();
+                }
+            } else {
+                console.error("Failed to upload image:", result.error || "Unknown error");
+                if (!silent) alert("Failed to upload image: " + (result.error || "Unknown error"));
+            }
+        } catch (e) {
+            console.error("Error uploading image", e);
+            if (!silent) alert("Error uploading image. Please try again.");
+        } finally {
+            if (!silent) setUploadingImage(false);
+        }
     };
 
     // Category management functions
@@ -484,6 +517,7 @@ const ProductManagement: React.FC = () =>
                                 <TableColumn>NAME</TableColumn>
                                 <TableColumn>SKU</TableColumn>
                                 <TableColumn>CATEGORY</TableColumn>
+                                <TableColumn>PRICE</TableColumn>
                                 <TableColumn>STATUS</TableColumn>
                                 <TableColumn width={64} hideHeader>ACTIONS</TableColumn>
                             </TableHeader>
@@ -494,7 +528,7 @@ const ProductManagement: React.FC = () =>
                                             <div className="w-[5rem] h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
                                                 {product.image_url ? (
                                                     <Image
-                                                        src={product.image_url}
+                                                        src={`${product.image_url}?v=${Date.now()}`}
                                                         alt={product.name}
                                                         className="w-full h-full object-cover"
                                                         radius={"md"}
@@ -512,6 +546,7 @@ const ProductManagement: React.FC = () =>
                                         </TableCell>
                                         <TableCell>{product.sku}</TableCell>
                                         <TableCell>{getCategoryName(product.category_id)}</TableCell>
+                                        <TableCell>${product.price?.toFixed(2)}</TableCell>
                                         <TableCell>
                                             <Chip color={getActiveStatusColor(product.is_active ?? false)} variant="flat" size="sm">
                                                 {product.is_active ? "Active" : "Inactive"}
@@ -572,7 +607,7 @@ const ProductManagement: React.FC = () =>
                 onCreateProduct={handleCreateProduct}
                 onImageSelect={handleImageSelect}
                 actionLoading={actionLoading}
-                uploadingImage={uploadingImage}
+                uploadingImage={uploadingImage || !!pendingNewProductImage}
             />
 
             {/* Edit Product Modal */}

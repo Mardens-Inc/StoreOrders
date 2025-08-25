@@ -25,7 +25,12 @@ const Products: React.FC = () =>
         categoriesApi.getCategories().then(categoriesResponse =>
         {
             if (categoriesResponse.success && categoriesResponse.data)
-                setCategory((categoriesResponse.data as Category[]).find(i => i.id === categoryId));
+            {
+                const category = (categoriesResponse.data as Category[]).find(i => i.id === categoryId);
+                setCategory(category);
+                if (category) document.title = `Browse ${category.name} - Store Orders`;
+                else document.title = "Browse All Products - Store Orders";
+            }
         });
         const fetchProducts = async () =>
         {
@@ -58,7 +63,14 @@ const Products: React.FC = () =>
                         description: apiProduct.product?.description || apiProduct.description,
                         category_id: apiProduct.product?.category_id || apiProduct.category_id,
                         imageUrl: apiProduct.product?.image_url || apiProduct.image_url || "/api/placeholder/300/300",
-                        sku: apiProduct.product?.sku || apiProduct.sku
+                        sku: apiProduct.product?.sku || apiProduct.sku,
+                        price: apiProduct.product?.price ?? apiProduct.price ?? 0,
+                        in_stock: apiProduct.product?.in_stock ?? apiProduct.in_stock ?? true,
+                        stock_quantity: apiProduct.product?.stock_quantity ?? apiProduct.stock_quantity ?? 0,
+                        is_active: apiProduct.product?.is_active ?? apiProduct.is_active ?? true,
+                        created_at: apiProduct.product?.created_at ?? apiProduct.created_at,
+                        updated_at: apiProduct.product?.updated_at ?? apiProduct.updated_at,
+                        image_url: apiProduct.product?.image_url ?? apiProduct.image_url
                     }));
                     setProducts(transformedProducts);
                 } else
@@ -86,7 +98,7 @@ const Products: React.FC = () =>
             product.sku.toLowerCase().includes(searchTerm.toLowerCase())
         );
 
-        // Sort by name only since price is no longer available
+        // Sort by name only since price may not change ordering requirements now
         filtered.sort((a, b) => a.name.localeCompare(b.name));
 
         return filtered;
@@ -197,7 +209,7 @@ const Products: React.FC = () =>
                     ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     : "space-y-4"
                 }>
-                    {filteredAndSortedProducts.map((product) => <ProductItem product={product} viewMode={viewMode} onAddToCart={handleAddToCart} />)}
+                    {filteredAndSortedProducts.map((product) => <ProductItem product={product} viewMode={viewMode} onAddToCart={handleAddToCart}/>)}
                 </div>
             )}
         </div>

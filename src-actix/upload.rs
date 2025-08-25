@@ -4,10 +4,16 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use database_common_lib::http_error::Result;
 use serde_json::json;
 use tokio::fs;
-use uuid::Uuid;
+use database_common_lib::database_connection::DatabaseConnectionData;
+use crate::products::ProductRecord;
 
-#[post("/product-image")]
-pub async fn upload_product_image(req: HttpRequest, bytes: web::Bytes) -> Result<impl Responder> {
+#[post("/product-image/{product_id}")]
+pub async fn upload_product_image(
+    req: HttpRequest,
+    connection_data: web::Data<DatabaseConnectionData>,
+    path: web::Path<String>,
+    bytes: web::Bytes,
+) -> Result<impl Responder> {
     // Check if user is admin
     if let Some(claims) = req.get_claims() {
         if claims.role != "admin" {
@@ -21,40 +27,73 @@ pub async fn upload_product_image(req: HttpRequest, bytes: web::Bytes) -> Result
         })));
     }
 
-    // Create products directory if it doesn't exist
-    let products_dir = "./products";
-    if fs::metadata(products_dir).await.is_err() {
-        fs::create_dir_all(products_dir).await?;
-    }
-
-    // Check if we have any data
+    // Ensure we have data
     if bytes.is_empty() {
         return Ok(HttpResponse::BadRequest().json(json!({
             "error": "No file data provided"
         })));
     }
 
-    // Generate unique filename with .png extension (since cropped images are PNG)
-    let unique_filename = format!(
-        "product_{}_{}.png",
-        &Uuid::new_v4().to_string().replace("-", "")[..8],
-        chrono::Utc::now().timestamp()
-    );
+    let products_dir = "./products";
+    if fs::metadata(products_dir).await.is_err() {
+        fs::create_dir_all(products_dir).await?;
+    }
 
-    let filepath = format!("{}/{}", products_dir, unique_filename);
+    let product_id_hash = path.into_inner();
 
-    // Write the file data directly
-    match fs::write(&filepath, &bytes).await {
-        Ok(_) => {
-            // Return the file URL
-            Ok(HttpResponse::Ok().json(json!({
-                "success": true,
-                "url": format!("/products/{}", unique_filename),
-                "filename": unique_filename
-            })))
+    // Decode hashed product id -> numeric id
+    let numeric_id = match serde_hash::hashids::decode_single(product_id_hash.as_str()) {
+        Ok(id) => id,
+        Err(_) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "error": "Invalid product id"
+            })));
         }
-        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
+    };
+
+    // Deterministic filename so re-uploads overwrite
+    // Use the hashed id in filename to avoid exposing numeric id pattern
+    let sanitized: String = product_id_hash
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .collect();
+    if sanitized.is_empty() {
+        return Ok(HttpResponse::BadRequest().json(json!({ "error": "Invalid product id" })));
+    }
+
+    let filename = format!("product_{}.png", sanitized);
+    let filepath = format!("{}/{}", products_dir, filename);
+
+    // Write (overwrite) file
+    if let Err(e) = fs::write(&filepath, &bytes).await {
+        return Ok(HttpResponse::InternalServerError().json(json!({
             "error": format!("Failed to save file: {}", e)
+        })));
+    }
+
+    let url = format!("/products/{}", filename);
+
+    // Update product record image_url
+    let pool = connection_data.get_pool().await?;
+    match ProductRecord::update(
+        &pool,
+        numeric_id,
+        None,
+        None,
+        None,
+        None,
+        Some(url.as_str()),
+        None,
+        None,
+    )
+    .await? {
+        Some(_product) => Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "url": url,
+            "filename": filename
+        }))),
+        None => Ok(HttpResponse::NotFound().json(json!({
+            "error": "Product not found"
         }))),
     }
 }

@@ -1,79 +1,126 @@
-import React, {useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
+import {ApiResponse, ordersApi, storesApi} from "../../utils/api";
+import {useAuth} from "../../providers/AuthProvider";
+import {ErrorBoundary} from "../ErrorBoundary.tsx";
+import {StoreOrderRecordDto, OrderWithItemsDto, OrderItemWithProductDto, StoreOption} from "../../utils/types";
 
-interface Order
-{
-    id: string;
-    date: string;
-    status: "pending" | "approved" | "shipped" | "delivered" | "cancelled";
-    total: number;
-    itemCount: number;
-    items: Array<{
-        name: string;
-        quantity: number;
-        price: number;
-    }>;
-}
+// Backend shapes removed in favor of shared DTOs
 
 const Orders: React.FC = () =>
 {
+    document.title = "Orders - Store Orders";
     const navigate = useNavigate();
+    const {user} = useAuth();
+
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
 
-    // Mock orders data
-    const mockOrders: Order[] = [
+    const [loading, setLoading] = useState(false);
+    const [orders, setOrders] = useState<StoreOrderRecordDto[]>([]);
+    const [stores, setStores] = useState<StoreOption[]>([]);
+    const [selectedStore, setSelectedStore] = useState<string | null>(null);
+
+    const storeOptions = useMemo(() => [{id: "__all", city: "All Stores", address: null as any}, ...stores], [stores]);
+
+    const [details, setDetails] = useState<Record<string, OrderWithItemsDto | undefined>>({});
+    const [updating, setUpdating] = useState<Record<string, boolean>>({});
+
+    const role = user?.role; // "admin" | "store"
+
+
+    // Fetch stores for admin filter
+    useEffect(() =>
+    {
+        if (role === "admin")
         {
-            id: "ORD-2024-001",
-            date: "2024-01-15",
-            status: "delivered",
-            total: 156.43,
-            itemCount: 8,
-            items: [
-                {name: "Premium Ballpoint Pens (Pack of 12)", quantity: 2, price: 8.99},
-                {name: "Copy Paper (500 sheets)", quantity: 3, price: 12.49},
-                {name: "File Folders (25 pack)", quantity: 1, price: 15.99}
-            ]
-        },
+            (async () =>
+            {
+                try
+                {
+                    const resp = await storesApi.getStores();
+                    const data = (resp as ApiResponse).data as any[];
+                    setStores((data || []).map(s => ({id: s.id, city: s.city ?? null, address: s.address ?? null})));
+                } catch (e)
+                {
+                    console.error("Failed to load stores", e);
+                }
+            })();
+        } else if (role === "store")
         {
-            id: "ORD-2024-002",
-            date: "2024-01-18",
-            status: "shipped",
-            total: 89.97,
-            itemCount: 5,
-            items: [
-                {name: "Desktop Stapler", quantity: 1, price: 24.99},
-                {name: "Sticky Notes Variety Pack", quantity: 3, price: 6.75}
-            ]
-        },
-        {
-            id: "ORD-2024-003",
-            date: "2024-01-20",
-            status: "pending",
-            total: 45.23,
-            itemCount: 3,
-            items: [
-                {name: "Highlighter Set (4 colors)", quantity: 2, price: 9.49}
-            ]
+            // For store users, lock selectedStore to their own store_id
+            if (user?.store_id) setSelectedStore(user.store_id);
         }
-    ];
+    }, [role, user?.store_id]);
+
+    // Fetch orders based on role and selected store
+    const fetchOrders = async (storeId?: string) =>
+    {
+        setLoading(true);
+        try
+        {
+            let resp: ApiResponse;
+            console.log("Getting orders for role: ", role, " storeId: ", storeId, " user: ", user);
+            if (role === "admin")
+            {
+                if (!storeId)
+                {
+                    resp = await ordersApi.getOrders();
+                } else
+                {
+                    resp = await ordersApi.getStoreOrders(storeId);
+                }
+            } else if (role === "store")
+            {
+                if (!user?.store_id)
+                {
+                    setOrders([]);
+                    return;
+                }
+                resp = await ordersApi.getStoreOrders(user.store_id);
+            } else
+            {
+                // Fallback: personal orders
+                resp = await ordersApi.getOrders();
+            }
+            const data = (resp as ApiResponse).data as StoreOrderRecordDto[];
+            setOrders(data || []);
+        } catch (e)
+        {
+            console.error("Failed to load orders", e);
+            setOrders([]);
+        } finally
+        {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() =>
+    {
+        if (role === "admin")
+        {
+            // Always fetch; if no selectedStore, backend returns all orders
+            fetchOrders(selectedStore || undefined);
+        } else
+        {
+            fetchOrders();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [role, selectedStore]);
 
     const getStatusColor = (status: string) =>
     {
-        switch (status)
+        const s = status.toLowerCase();
+        switch (s)
         {
             case "pending":
                 return "warning";
-            case "approved":
-                return "primary";
             case "shipped":
-                return "secondary";
+                return "primary";
             case "delivered":
                 return "success";
-            case "cancelled":
-                return "danger";
             default:
                 return "default";
         }
@@ -81,30 +128,85 @@ const Orders: React.FC = () =>
 
     const getStatusIcon = (status: string) =>
     {
-        switch (status)
+        const s = status.toLowerCase();
+        switch (s)
         {
             case "pending":
                 return "lucide:clock";
-            case "approved":
-                return "lucide:check-circle";
             case "shipped":
                 return "lucide:truck";
             case "delivered":
                 return "lucide:package-check";
-            case "cancelled":
-                return "lucide:x-circle";
             default:
                 return "lucide:circle";
         }
     };
 
-    const filteredOrders = mockOrders.filter(order =>
+    const filteredOrders = useMemo(() =>
     {
-        const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            order.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
+        return (orders || []).filter(order =>
+        {
+            const matchesSearch = (order.order_number || "").toLowerCase().includes(searchTerm.toLowerCase())
+                || (order.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+            const s = order.status?.toLowerCase?.() || "";
+            const matchesStatus = statusFilter === "all" || s === statusFilter;
+            return matchesSearch && matchesStatus;
+        });
+    }, [orders, searchTerm, statusFilter]);
+
+    const toggleDetails = async (orderId: string) =>
+    {
+        if (details[orderId])
+        {
+            // collapse
+            setDetails(prev => ({...prev, [orderId]: undefined}));
+            return;
+        }
+        try
+        {
+            const resp = await ordersApi.getOrder(orderId);
+            const data = (resp as ApiResponse).data as OrderWithItemsDto;
+            setDetails(prev => ({...prev, [orderId]: data}));
+        } catch (e)
+        {
+            console.error("Failed to load order details", e);
+        }
+    };
+
+    const updateStatus = async (order: StoreOrderRecordDto, status: "Shipped" | "Delivered") =>
+    {
+        setUpdating(prev => ({...prev, [order.id]: true}));
+        try
+        {
+            await ordersApi.updateOrderStatus(order.id, status);
+            // Refresh orders list and details
+            await fetchOrders(selectedStore || undefined);
+            if (details[order.id])
+            {
+                const resp = await ordersApi.getOrder(order.id);
+                const data = (resp as ApiResponse).data as OrderWithItemsDto;
+                setDetails(prev => ({...prev, [order.id]: data}));
+            }
+        } catch (e)
+        {
+            console.error("Failed to update order status", e);
+        } finally
+        {
+            setUpdating(prev => ({...prev, [order.id]: false}));
+        }
+    };
+
+    const canAdminSetShippedOrDelivered = (order: StoreOrderRecordDto) =>
+    {
+        const s = order.status.toLowerCase();
+        return role === "admin" && s === "pending";
+    };
+
+    const canStoreMarkDelivered = (order: StoreOrderRecordDto) =>
+    {
+        const s = order.status.toLowerCase();
+        return role === "store" && s !== "delivered";
+    };
 
     return (
         <div className="p-6">
@@ -115,130 +217,197 @@ const Orders: React.FC = () =>
             </div>
 
             {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <Input
-                    placeholder="Search orders..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
-                    variant="bordered"
-                    className="w-full sm:w-80"
-                    classNames={{
-                        input: "text-sm",
-                        inputWrapper: "bg-white"
-                    }}
-                />
-                <Select
-                    placeholder="Filter by status"
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    variant="bordered"
-                    className="w-full sm:w-48"
-                    classNames={{
-                        trigger: "bg-white"
-                    }}
-                >
-                    <SelectItem key="all" textValue="all">All Orders</SelectItem>
-                    <SelectItem key="pending" textValue="pending">Pending</SelectItem>
-                    <SelectItem key="approved" textValue="approved">Approved</SelectItem>
-                    <SelectItem key="shipped" textValue="shipped">Shipped</SelectItem>
-                    <SelectItem key="delivered" textValue="delivered">Delivered</SelectItem>
-                    <SelectItem key="cancelled" textValue="cancelled">Cancelled</SelectItem>
-                </Select>
-            </div>
+            <ErrorBoundary>
+                <div className="flex flex-col sm:flex-row gap-4 mb-6 items-stretch sm:items-end">
+                    <Input
+                        label={"Search orders"}
+                        placeholder="Search by order number or notes, ex: #12345, shipped, "
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
+                        variant="bordered"
+                        className="w-full sm:w-80"
+                        classNames={{input: "text-sm", inputWrapper: "bg-white"}}
+                        size={"sm"}
+                    />
+                    <Select
+                        label={"Filter by status"}
+                        selectedKeys={[statusFilter]}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        variant="bordered"
+                        className="w-full sm:w-48"
+                        classNames={{trigger: "bg-white"}}
+                        size={"sm"}
+                    >
+                        <SelectItem key="all" textValue="all">All Orders</SelectItem>
+                        <SelectItem key="pending" textValue="pending">Pending</SelectItem>
+                        <SelectItem key="shipped" textValue="shipped">Shipped</SelectItem>
+                        <SelectItem key="delivered" textValue="delivered">Delivered</SelectItem>
+                    </Select>
 
-            {/* Orders List */}
-            <div className="space-y-4">
-                {filteredOrders.length === 0 ? (
-                    <div className="text-center py-12">
-                        <Icon icon="lucide:package-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
-                        <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
-                        <p className="text-gray-600 mb-6">You haven't placed any orders yet or no orders match your search</p>
-                        <Button
-                            color="primary"
-                            onPress={() => navigate("/app/categories")}
-                            startContent={<Icon icon="lucide:shopping-bag" className="w-4 h-4"/>}
+                    {role === "admin" && (
+                        <Select
+                            label="Filter by Store"
+                            selectedKeys={selectedStore ? [selectedStore] : ["__all"]}
+                            onSelectionChange={(keys) =>
+                            {
+                                const key = Array.from(keys)[0] as string;
+                                setSelectedStore(key === "__all" ? null : key);
+                            }}
+                            variant="bordered"
+                            className="w-full sm:w-72"
+                            classNames={{trigger: "bg-white"}}
+                            size={"sm"}
                         >
-                            Start Shopping
-                        </Button>
-                    </div>
-                ) : (
-                    filteredOrders.map((order) => (
-                        <Card key={order.id} className="hover:shadow-lg transition-shadow">
-                            <CardHeader>
-                                <div className="flex justify-between items-start w-full">
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900">{order.id}</h3>
-                                        <p className="text-sm text-gray-500">
-                                            Ordered on {new Date(order.date).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                    <Chip
-                                        color={getStatusColor(order.status) as any}
-                                        variant="flat"
-                                        startContent={<Icon icon={getStatusIcon(order.status)} className="w-4 h-4"/>}
-                                    >
-                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                                    </Chip>
-                                </div>
-                            </CardHeader>
-                            <CardBody>
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    {/* Order Summary */}
-                                    <div className="lg:col-span-2">
-                                        <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
-                                        <div className="space-y-2">
-                                            {order.items.map((item, index) => (
-                                                <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
-                                                    <div>
-                                                        <p className="font-medium text-sm text-gray-900">{item.name}</p>
-                                                        <p className="text-xs text-gray-500">Quantity: {item.quantity}</p>
-                                                    </div>
-                                                    <p className="font-medium text-sm">${(item.price * item.quantity).toFixed(2)}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                            {storeOptions.map(s => (
+                                <SelectItem key={s.id}>
+                                    {s.city || s.address || s.id}
+                                </SelectItem>
+                            ))}
+                        </Select>
+                    )}
+                </div>
+            </ErrorBoundary>
 
-                                    {/* Order Total and Actions */}
-                                    <div className="bg-gray-50 p-4 rounded-lg">
-                                        <div className="space-y-3">
-                                            <div className="flex justify-between">
-                                                <span className="text-sm text-gray-600">Items:</span>
-                                                <span className="text-sm font-medium">{order.itemCount}</span>
+            {/* Loader */}
+            {loading && (
+                <div className="flex items-center gap-2 text-gray-600 mb-4">
+                    <Spinner size="sm"/> Loading orders...
+                </div>
+            )}
+
+            <ErrorBoundary>
+                {/* Orders List */}
+                <div className="space-y-4">
+                    {!loading && filteredOrders.length === 0 ? (
+                        <div className="text-center py-12">
+                            <Icon icon="lucide:package-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
+                            <h3 className="text-lg font-medium text-gray-900 mb-2">No orders found</h3>
+                            <p className="text-gray-600 mb-6">No orders match your filters</p>
+                            <Button
+                                color="primary"
+                                onPress={() => navigate("/app/categories")}
+                                startContent={<Icon icon="lucide:shopping-bag" className="w-4 h-4"/>}
+                            >
+                                Start Shopping
+                            </Button>
+                        </div>
+                    ) : (
+                        filteredOrders.map((order) =>
+                        {
+                            const detailsLoaded = !!details[order.id];
+                            const items: OrderItemWithProductDto[] = details[order.id]?.items || [];
+                            console.log("Order items: ", items);
+                            const totalItems = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
+                            return (
+                                <Card key={order.id} className="hover:shadow-lg transition-shadow">
+                                    <CardHeader>
+                                        <div className="flex justify-between items-start w-full">
+                                            <div>
+                                                <h3 className="text-lg font-semibold text-gray-900">{order.order_number}</h3>
+                                                <p className="text-sm text-gray-500">
+                                                    Ordered on {new Date(order.created_at).toLocaleDateString()}
+                                                </p>
                                             </div>
-                                            <div className="flex justify-between text-lg font-bold">
-                                                <span>Total:</span>
-                                                <span>${order.total.toFixed(2)}</span>
-                                            </div>
-                                            <div className="space-y-2 pt-2">
-                                                <Button
-                                                    variant="bordered"
-                                                    size="sm"
-                                                    className="w-full"
-                                                    startContent={<Icon icon="lucide:eye" className="w-4 h-4"/>}
-                                                >
-                                                    View Details
-                                                </Button>
-                                                {order.status === "delivered" && (
-                                                    <Button
-                                                        color="primary"
-                                                        size="sm"
-                                                        className="w-full"
-                                                        startContent={<Icon icon="lucide:repeat" className="w-4 h-4"/>}
-                                                    >
-                                                        Reorder
-                                                    </Button>
+                                            <Chip
+                                                color={getStatusColor(order.status) as any}
+                                                variant="flat"
+                                                startContent={<Icon icon={getStatusIcon(order.status)} className="w-4 h-4"/>}
+                                            >
+                                                {order.status}
+                                            </Chip>
+                                        </div>
+                                    </CardHeader>
+                                    <CardBody>
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            {/* Order Summary */}
+                                            <div className="lg:col-span-2">
+                                                <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
+                                                {detailsLoaded ? (
+                                                    <div className="space-y-2">
+                                                        {items.map((it, index) => (
+                                                            <div key={index} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                                                                <div>
+                                                                    <p className="font-medium text-sm text-gray-900">{it.product_name}</p>
+                                                                    <p className="text-xs text-gray-500">Quantity: {it.quantity}</p>
+                                                                </div>
+                                                                <p className="font-medium text-sm">${(it.total_price).toFixed(2)}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className="text-sm text-gray-500">Details not loaded.</div>
                                                 )}
                                             </div>
+
+                                            {/* Order Total and Actions */}
+                                            <div className="bg-gray-50 p-4 rounded-lg">
+                                                <div className="space-y-3">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-sm text-gray-600">Items:</span>
+                                                        <span className="text-sm font-medium">{detailsLoaded ? totalItems : "-"}</span>
+                                                    </div>
+                                                    <div className="flex justify-between text-lg font-bold">
+                                                        <span>Total:</span>
+                                                        <span>${Number(order.total_amount || 0).toFixed(2)}</span>
+                                                    </div>
+                                                    <div className="space-y-2 pt-2">
+                                                        <Button
+                                                            variant="bordered"
+                                                            size="sm"
+                                                            className="w-full"
+                                                            startContent={<Icon icon="lucide:eye" className="w-4 h-4"/>}
+                                                            onPress={() => toggleDetails(order.id)}
+                                                        >
+                                                            {detailsLoaded ? "Hide Details" : "View Details"}
+                                                        </Button>
+                                                        {role === "admin" && canAdminSetShippedOrDelivered(order) && (
+                                                            <div className="flex gap-2">
+                                                                <Button
+                                                                    color="secondary"
+                                                                    size="sm"
+                                                                    className="flex-1"
+                                                                    isDisabled={!!updating[order.id]}
+                                                                    onPress={() => updateStatus(order, "Shipped")}
+                                                                    startContent={<Icon icon="lucide:truck" className="w-4 h-4"/>}
+                                                                >
+                                                                    Mark Shipped
+                                                                </Button>
+                                                                <Button
+                                                                    color="success"
+                                                                    size="sm"
+                                                                    className="flex-1"
+                                                                    isDisabled={!!updating[order.id]}
+                                                                    onPress={() => updateStatus(order, "Delivered")}
+                                                                    startContent={<Icon icon="lucide:package-check" className="w-4 h-4"/>}
+                                                                >
+                                                                    Mark Delivered
+                                                                </Button>
+                                                            </div>
+                                                        )}
+                                                        {role === "store" && canStoreMarkDelivered(order) && (
+                                                            <Button
+                                                                color="success"
+                                                                size="sm"
+                                                                className="w-full"
+                                                                isDisabled={!!updating[order.id]}
+                                                                onPress={() => updateStatus(order, "Delivered")}
+                                                                startContent={<Icon icon="lucide:package-check" className="w-4 h-4"/>}
+                                                            >
+                                                                Mark as Delivered
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    ))
-                )}
-            </div>
+                                    </CardBody>
+                                </Card>
+                            );
+                        })
+                    )}
+                </div>
+            </ErrorBoundary>
         </div>
     );
 };

@@ -7,6 +7,7 @@ use log::*;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
+use vite_actix::proxy_vite_options::ProxyViteOptions;
 use vite_actix::start_vite_server;
 
 mod asset_endpoint;
@@ -47,6 +48,25 @@ pub async fn run() -> Result<()> {
     stores::initialize(&pool).await?;
 
     pool.close().await;
+
+    // Start the Vite server in development mode
+    if DEBUG {
+        ProxyViteOptions::new().disable_logging().build()?;
+        std::thread::spawn(|| {
+            loop {
+                info!("Starting Vite server in development mode...");
+                let status = start_vite_server()
+                    .expect("Failed to start vite server")
+                    .wait()
+                    .expect("Vite server crashed!");
+                if !status.success() {
+                    error!("The vite server has crashed!");
+                } else {
+                    break;
+                }
+            }
+        });
+    }
 
     let server = HttpServer::new(move || {
         App::new()
@@ -89,10 +109,6 @@ pub async fn run() -> Result<()> {
         if DEBUG { "development" } else { "production" },
         PORT
     );
-
-    if DEBUG {
-        start_vite_server().expect("Failed to start vite server");
-    }
 
     let stop_result = server.await;
     debug!("Server stopped");
