@@ -96,8 +96,8 @@ pub async fn run() -> Result<()> {
                         HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
                     })),
             )
-            // Serve static product images
-            .service(actix_files::Files::new("/products", "products").show_files_listing())
+            // Serve static product images without directory listing
+            .service(actix_files::Files::new("/products", "products"))
             .configure_frontend_routes()
     })
     .workers(4)

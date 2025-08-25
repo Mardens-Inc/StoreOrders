@@ -32,11 +32,10 @@ class ApiClient
         {
             if (response.status === 401)
             {
-                // Token expired or invalid, logout user
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("auth_refresh_token");
-                localStorage.removeItem("auth_user");
-                window.location.href = "/";
+                // Token expired or invalid. Notify app-level auth handler instead of hard redirecting.
+                try {
+                    window.dispatchEvent(new CustomEvent("auth:unauthorized"));
+                } catch {}
                 throw new Error("Authentication required");
             }
 

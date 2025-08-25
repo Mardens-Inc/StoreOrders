@@ -106,6 +106,7 @@ const Login: React.FC = () =>
                             endContent={
                                 <Tooltip content={`${showPassword ? "Hide" : "Show"} password`}>
                                     <Button
+                                        aria-label={showPassword ? "Hide password" : "Show password"}
                                         variant={"light"}
                                         isIconOnly
                                         onPress={() => setShowPassword(prev => !prev)}

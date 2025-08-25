@@ -50,6 +50,7 @@ const Header: React.FC = () =>
                 {/* Search Bar */}
                 <NavbarItem className="flex-1 max-w-lg">
                     <Input
+                        aria-label="Search products"
                         placeholder="Search products..."
                         startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
                         variant="bordered"
@@ -74,6 +75,7 @@ const Header: React.FC = () =>
                                 shape="circle"
                             >
                                 <Button
+                                    aria-label="Open cart"
                                     variant="light"
                                     isIconOnly
                                     onPress={() => setIsOpen(true)}
@@ -88,6 +90,7 @@ const Header: React.FC = () =>
                 {/* Notifications */}
                 <NavbarItem>
                     <Button
+                        aria-label="View notifications"
                         variant="light"
                         isIconOnly
                         className="text-gray-600 hover:text-gray-900"
@@ -100,7 +103,7 @@ const Header: React.FC = () =>
                 <NavbarItem>
                     <Dropdown>
                         <DropdownTrigger>
-                            <div className="flex items-center gap-2 cursor-pointer">
+                            <div className="flex items-center gap-2 cursor-pointer" role="button" aria-label="Open user menu">
                                 <Avatar
                                     name={getUserDisplayName()[0].toUpperCase()}
                                     size="sm"

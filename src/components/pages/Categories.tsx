@@ -104,6 +104,7 @@ const Categories: React.FC = () =>
             {/* Search */}
             <div className="mb-6">
                 <Input
+                    aria-label="Search categories"
                     placeholder="Search categories..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}

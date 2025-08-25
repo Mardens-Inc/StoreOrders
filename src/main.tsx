@@ -1,7 +1,6 @@
 import React from "react";
 import {BrowserRouter, Route, Routes, useNavigate} from "react-router-dom";
 import ReactDOM from "react-dom/client";
-import $ from "jquery";
 
 import "./css/index.css";
 import Login from "./components/auth/Login";
@@ -11,7 +10,12 @@ import {AuthProvider} from "./providers/AuthProvider";
 import {CartProvider} from "./providers/CartProvider";
 
 
-ReactDOM.createRoot($("#root")[0]!).render(
+const rootElement = document.getElementById("root");
+if (!rootElement) {
+    throw new Error("Root element with id 'root' not found");
+}
+
+ReactDOM.createRoot(rootElement).render(
     <React.StrictMode>
         <BrowserRouter>
             <MainContentRenderer/>

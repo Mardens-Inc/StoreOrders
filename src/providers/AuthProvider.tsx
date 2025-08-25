@@ -109,9 +109,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
         }
     };
 
-    // Load user from localStorage on mount
+    // Load user from localStorage on mount and subscribe to unauthorized events
     useEffect(() =>
     {
+        const onUnauthorized = () => {
+            logout();
+        };
+
+        window.addEventListener("auth:unauthorized", onUnauthorized as EventListener);
+
         const initAuth = async () =>
         {
             const savedToken = localStorage.getItem("auth_token");
@@ -153,6 +159,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
         };
 
         initAuth();
+
+        return () => {
+            window.removeEventListener("auth:unauthorized", onUnauthorized as EventListener);
+        };
     }, []);
 
     const validateToken = async (authToken: string) =>
