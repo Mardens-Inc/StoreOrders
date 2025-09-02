@@ -87,17 +87,6 @@ const Header: React.FC = () =>
                         </NavbarItem>
                     </>
                 }
-                {/* Notifications */}
-                <NavbarItem>
-                    <Button
-                        aria-label="View notifications"
-                        variant="light"
-                        isIconOnly
-                        className="text-gray-600 hover:text-gray-900"
-                    >
-                        <Icon icon="lucide:bell" className="w-5 h-5"/>
-                    </Button>
-                </NavbarItem>
 
                 {/* User Menu */}
                 <NavbarItem>
