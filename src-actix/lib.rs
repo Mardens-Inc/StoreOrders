@@ -86,6 +86,7 @@ pub async fn run() -> Result<()> {
             .service(
                 web::scope("/api")
                     .app_data(Data::new(connection_data.clone()))
+                    .service(asset_endpoint::get_version)
                     .configure(auth::configure)
                     .configure(categories::configure)
                     .configure(products::configure)

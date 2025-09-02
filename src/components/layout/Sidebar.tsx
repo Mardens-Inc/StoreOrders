@@ -1,11 +1,12 @@
-import React from "react";
+import React, {useEffect, useState} from "react";
 import {useLocation, useNavigate} from "react-router-dom";
-import {Avatar, Button, Card, Divider} from "@heroui/react";
+import {Button, Card, Divider} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 
 const Sidebar: React.FC = () =>
 {
+    const [applicationVersion, setApplicationVersion] = useState("");
     const location = useLocation();
     const navigate = useNavigate();
     const {user} = useAuth();
@@ -64,9 +65,16 @@ const Sidebar: React.FC = () =>
         return location.pathname.startsWith(path);
     };
 
+    useEffect(() =>
+    {
+        fetch("/api/version")
+            .then(response => response.text())
+            .then(setApplicationVersion);
+    }, []);
+
     return (
-        <Card className="w-64 h-full rounded-none border-r shadow-sm">
-            <div className="p-6">
+        <Card className="w-64 h-full rounded-none border-r shadow-sm relative">
+            <div className="p-6 relative">
                 {/* Logo Section */}
                 <div className="flex items-center space-x-3 mb-8">
                     <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
@@ -77,27 +85,6 @@ const Sidebar: React.FC = () =>
                         <p className="text-xs text-gray-500">Store Portal</p>
                     </div>
                 </div>
-
-                {/* User Info */}
-                {user && (
-                    <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                            <Avatar
-                                name={user.email[0].toUpperCase()}
-                                size="sm"
-                                className="bg-blue-500 text-white"
-                            />
-                            <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                    {user.email}
-                                </p>
-                                <p className="text-xs text-gray-500 truncate">
-                                    {user.store_id}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 <Divider className="my-4"/>
 
@@ -156,6 +143,7 @@ const Sidebar: React.FC = () =>
                     )) : null}
                 </nav>
             </div>
+            <p className={"text-tiny opacity-40 font-bold italic mt-auto mb-2 text-center w-full"}>{applicationVersion}</p>
         </Card>
     );
 };

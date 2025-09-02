@@ -2,6 +2,7 @@ use crate::DEBUG;
 use actix_files::file_extension_to_mime;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::{get, web, App, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::mime::TEXT_PLAIN;
 use include_dir::{include_dir, Dir};
 use vite_actix::vite_app_factory::ViteAppFactory;
 
@@ -67,4 +68,11 @@ where
 			self.configure_vite()
 		}
 	}
+}
+
+
+#[get("/version")]
+pub async fn get_version() -> database_common_lib::http_error::Result<impl Responder> {
+	let version = env!("CARGO_PKG_VERSION");
+	Ok(HttpResponse::Ok().content_type(TEXT_PLAIN).body(version))
 }
