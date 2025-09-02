@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Chip, cn, Input, Spinner} from "@heroui/react";
+import {Card, CardBody, CardHeader, Chip, cn, Input, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {apiClient, categoriesApi} from "../../utils/api";
 
@@ -94,11 +94,11 @@ const Categories: React.FC = () =>
     };
 
     return (
-        <div className="p-6">
+        <div className="p-4 sm:p-6 lg:p-8">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Browse Categories</h1>
-                <p className="text-gray-600">Find the products you need by browsing our categories</p>
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Browse Categories</h1>
+                <p className="text-sm sm:text-base text-gray-600">Find the products you need by browsing our categories</p>
             </div>
 
             {/* Search */}
@@ -110,7 +110,7 @@ const Categories: React.FC = () =>
                     onChange={(e) => setSearchTerm(e.target.value)}
                     startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
                     variant="bordered"
-                    className="max-w-md"
+                    className="w-full sm:max-w-md"
                     classNames={{
                         input: "text-sm",
                         inputWrapper: "bg-white"
@@ -127,7 +127,7 @@ const Categories: React.FC = () =>
 
             {/* Categories Grid */}
             {!loading && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                     {filteredCategories.map((category) => (
                         <Card
                             key={category.id}
@@ -139,7 +139,7 @@ const Categories: React.FC = () =>
                                 <div className="flex items-center justify-between w-full">
                                     <div
                                         className={cn(
-                                            `p-3 rounded-lg transition-colors`,
+                                            `p-2 sm:p-3 rounded-lg transition-colors`,
                                             "data-[color=blue]:bg-blue-100 group-hover:data-[color=blue]:bg-blue-200",
                                             "data-[color=green]:bg-green-100 group-hover:data-[color=green]:bg-green-200",
                                             "data-[color=orange]:bg-orange-100 group-hover:data-[color=orange]:bg-orange-200",
@@ -154,63 +154,65 @@ const Categories: React.FC = () =>
                                         data-color={category.color}
                                     >
                                         <Icon
-                                            icon={category.icon || "lucide:folder"}
-                                            className={`w-6 h-6 text-${category.color}-600`}
+                                            icon={category.icon || "lucide:package"}
+                                            className={cn(
+                                                "w-5 h-5 sm:w-6 sm:h-6",
+                                                "data-[color=blue]:text-blue-600",
+                                                "data-[color=green]:text-green-600",
+                                                "data-[color=orange]:text-orange-600",
+                                                "data-[color=purple]:text-purple-600",
+                                                "data-[color=indigo]:text-indigo-600",
+                                                "data-[color=red]:text-red-600",
+                                                "data-[color=yellow]:text-yellow-600",
+                                                "data-[color=gray]:text-gray-600",
+                                                "data-[color=pink]:text-pink-600",
+                                                "data-[color=teal]:text-teal-600"
+                                            )}
+                                            data-color={category.color}
                                         />
                                     </div>
-                                    <Icon
-                                        icon="lucide:chevron-right"
-                                        className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors"
-                                    />
-                                </div>
-                            </CardHeader>
-                            <CardBody className="pt-0">
-                                <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
-                                    {category.name}
-                                </h3>
-                                <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                                    {category.description}
-                                </p>
-                                <div className="flex items-center justify-between">
                                     <Chip
                                         size="sm"
                                         variant="flat"
-                                        color="primary"
-                                        className="text-xs"
+                                        className={cn(
+                                            "data-[color=blue]:text-blue-700 data-[color=blue]:bg-blue-50",
+                                            "data-[color=green]:text-green-700 data-[color=green]:bg-green-50",
+                                            "data-[color=orange]:text-orange-700 data-[color=orange]:bg-orange-50",
+                                            "data-[color=purple]:text-purple-700 data-[color=purple]:bg-purple-50",
+                                            "data-[color=indigo]:text-indigo-700 data-[color=indigo]:bg-indigo-50",
+                                            "data-[color=red]:text-red-700 data-[color=red]:bg-red-50",
+                                            "data-[color=yellow]:text-yellow-700 data-[color=yellow]:bg-yellow-50",
+                                            "data-[color=gray]:text-gray-700 data-[color=gray]:bg-gray-50",
+                                            "data-[color=pink]:text-pink-700 data-[color=pink]:bg-pink-50",
+                                            "data-[color=teal]:text-teal-700 data-[color=teal]:bg-teal-50"
+                                        )}
+                                        data-color={category.color}
                                     >
                                         {category.itemCount} items
                                     </Chip>
-                                    <Button
-                                        size="sm"
-                                        variant="light"
-                                        color="primary"
-                                        className="text-xs"
-                                        onPress={() => handleCategoryClick(category.id)}
-                                    >
-                                        Browse
-                                    </Button>
                                 </div>
+                            </CardHeader>
+                            <CardBody className="pt-0">
+                                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-1">
+                                    {category.name}
+                                </h3>
+                                <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                    {category.description}
+                                </p>
                             </CardBody>
                         </Card>
                     ))}
-                </div>
-            )}
 
-            {/* No Results */}
-            {!loading && filteredCategories.length === 0 && (
-                <div className="text-center py-12">
-                    <Icon icon="lucide:search-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
-                    <p className="text-gray-600">Try adjusting your search terms</p>
-                </div>
-            )}
-
-            {/* Empty State */}
-            {!loading && categories.length === 0 && searchTerm === "" && (
-                <div className="text-center py-12">
-                    <Icon icon="lucide:folder-x" className="w-12 h-12 text-gray-400 mx-auto mb-4"/>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No categories available</h3>
-                    <p className="text-gray-600">Categories will appear here once they are created by an administrator</p>
+                    {/* Empty State */}
+                    {filteredCategories.length === 0 && (
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
+                            <Icon icon="lucide:search-x" className="w-16 h-16 text-gray-300 mb-4"/>
+                            <h3 className="text-lg font-semibold text-gray-500 mb-2">No categories found</h3>
+                            <p className="text-gray-400">
+                                {searchTerm ? `No categories match "${searchTerm}"` : "No categories available"}
+                            </p>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

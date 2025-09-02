@@ -3,6 +3,7 @@ import {useLocation, useNavigate} from "react-router-dom";
 import {Button, Card, Divider} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
+import {useLayout} from "../../providers/LayoutProvider";
 
 const Sidebar: React.FC = () =>
 {
@@ -10,6 +11,7 @@ const Sidebar: React.FC = () =>
     const location = useLocation();
     const navigate = useNavigate();
     const {user} = useAuth();
+    const {setIsMobileMenuOpen, isMobile} = useLayout();
 
     const navigationItems = [
         {
@@ -65,6 +67,14 @@ const Sidebar: React.FC = () =>
         return location.pathname.startsWith(path);
     };
 
+    const handleNavigation = (path: string) => {
+        navigate(path);
+        // Close mobile menu after navigation
+        if (isMobile) {
+            setIsMobileMenuOpen(false);
+        }
+    };
+
     useEffect(() =>
     {
         fetch("/api/version")
@@ -73,77 +83,87 @@ const Sidebar: React.FC = () =>
     }, []);
 
     return (
-        <Card className="w-64 h-full rounded-none border-r shadow-sm relative">
-            <div className="p-6 relative">
+        <Card className={`
+            w-64 h-full rounded-none border-r shadow-sm relative
+            ${isMobile ? 'shadow-lg' : 'shadow-sm'}
+        `}>
+            <div className="p-4 sm:p-6 relative flex flex-col h-full">
                 {/* Logo Section */}
-                <div className="flex items-center space-x-3 mb-8">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-bold text-lg">M</span>
+                <div className="flex items-center space-x-3 mb-6 sm:mb-8">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold text-base sm:text-lg">M</span>
                     </div>
-                    <div>
-                        <h1 className="text-lg font-bold text-gray-900">Mardens</h1>
+                    <div className="min-w-0 flex-1">
+                        <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">Mardens</h1>
                         <p className="text-xs text-gray-500">Store Portal</p>
                     </div>
                 </div>
 
-                <Divider className="my-4"/>
+                <Divider className="my-3 sm:my-4"/>
 
                 {/* Navigation */}
-                <nav className="space-y-2">
+                <nav className="space-y-1 sm:space-y-2 flex-1">
                     {navigationItems.map((item) => (
                         <Button
                             key={item.id}
                             variant={isActiveRoute(item.path) ? "solid" : "light"}
                             color={isActiveRoute(item.path) ? "primary" : "default"}
-                            className="w-full justify-start h-12"
+                            className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base"
                             startContent={
                                 <Icon
                                     icon={item.icon}
-                                    className="w-5 h-5"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                                 />
                             }
-                            onPress={() => navigate(item.path)}
+                            onPress={() => handleNavigation(item.path)}
                         >
-                            <span className="ml-3 text-left">{item.label}</span>
+                            <span className="ml-2 sm:ml-3 text-left truncate">{item.label}</span>
                         </Button>
                     ))}
+
                     {/* Render admin navigation items if user is admin */}
                     {user?.role === "admin" ? adminNavigationItems.map((item) => (
                         <Button
                             key={item.id}
                             variant={isActiveRoute(item.path) ? "solid" : "light"}
                             color={isActiveRoute(item.path) ? "primary" : "default"}
-                            className="w-full justify-start h-12"
+                            className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base"
                             startContent={
                                 <Icon
                                     icon={item.icon}
-                                    className="w-5 h-5"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                                 />
                             }
-                            onPress={() => navigate(item.path)}
+                            onPress={() => handleNavigation(item.path)}
                         >
-                            <span className="ml-3 text-left">{item.label}</span>
+                            <span className="ml-2 sm:ml-3 text-left truncate">{item.label}</span>
                         </Button>
                     )) : user?.role === "store" ? storeNavigationItems.map((item) => (
                         <Button
                             key={item.id}
                             variant={isActiveRoute(item.path) ? "solid" : "light"}
                             color={isActiveRoute(item.path) ? "primary" : "default"}
-                            className="w-full justify-start h-12"
+                            className="w-full justify-start h-10 sm:h-12 text-sm sm:text-base"
                             startContent={
                                 <Icon
                                     icon={item.icon}
-                                    className="w-5 h-5"
+                                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
                                 />
                             }
-                            onPress={() => navigate(item.path)}
+                            onPress={() => handleNavigation(item.path)}
                         >
-                            <span className="ml-3 text-left">{item.label}</span>
+                            <span className="ml-2 sm:ml-3 text-left truncate">{item.label}</span>
                         </Button>
                     )) : null}
                 </nav>
+
+                {/* Version Display */}
+                <div className="mt-auto pt-3 sm:pt-4">
+                    <p className="text-tiny opacity-40 font-bold italic text-center w-full truncate">
+                        {applicationVersion}
+                    </p>
+                </div>
             </div>
-            <p className={"text-tiny opacity-40 font-bold italic mt-auto mb-2 text-center w-full"}>{applicationVersion}</p>
         </Card>
     );
 };

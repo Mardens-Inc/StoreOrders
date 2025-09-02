@@ -11,6 +11,7 @@ import {HeroUIProvider} from "@heroui/react";
 import {ToastProvider} from "@heroui/toast";
 import {AuthProvider} from "./providers/AuthProvider";
 import {CartProvider} from "./providers/CartProvider";
+import {LayoutProvider} from "./providers/LayoutProvider";
 
 const rootElement = document.getElementById("root");
 if (!rootElement)
@@ -36,13 +37,15 @@ export function MainContentRenderer()
             />
             <AuthProvider>
                 <CartProvider>
-                    <Routes>
-                        <Route path="/" element={<Login/>}/>
-                        <Route path="/login" element={<Login/>}/>
-                        <Route path="/forgot-password" element={<ForgotPassword/>}/>
-                        <Route path="/reset-password" element={<ResetPassword/>}/>
-                        <Route path="/app/*" element={<AppLayout/>}/>
-                    </Routes>
+                    <LayoutProvider>
+                        <Routes>
+                            <Route path="/" element={<Login/>}/>
+                            <Route path="/login" element={<Login/>}/>
+                            <Route path="/forgot-password" element={<ForgotPassword/>}/>
+                            <Route path="/reset-password" element={<ResetPassword/>}/>
+                            <Route path="/app/*" element={<AppLayout/>}/>
+                        </Routes>
+                    </LayoutProvider>
                 </CartProvider>
             </AuthProvider>
         </HeroUIProvider>

@@ -121,19 +121,19 @@ const Dashboard: React.FC = () =>
     ];
 
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 lg:p-8 space-y-6">
             {/* Welcome Section */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <div className="mb-6 sm:mb-8">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                     Welcome back, {getUserDisplayName().split(" ")[0]}!
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-sm sm:text-base text-gray-600">
                     {user?.role === "admin"
                         ? "Manage your store inventory and monitor orders across all locations."
                         : "Ready to place your next order? Browse our catalog and add items to your cart."
                     }
                 </p>
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <Chip
                         color={user?.role === "admin" ? "danger" : "primary"}
                         variant="flat"
@@ -150,16 +150,16 @@ const Dashboard: React.FC = () =>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 {statsCards.map((stat, index) => (
                     <Card key={index} className="bg-gradient-to-r from-white to-gray-50">
-                        <CardBody className="flex flex-row items-center gap-4 p-6">
-                            <div className={`p-3 rounded-lg bg-${stat.color}-100 flex items-center justify-center`}>
-                                <Icon icon={stat.icon} className={`w-6 h-6 text-${stat.color}-600`}/>
+                        <CardBody className="flex flex-row items-center gap-3 sm:gap-4 p-4 sm:p-6">
+                            <div className={`p-2 sm:p-3 rounded-lg bg-${stat.color}-100 flex items-center justify-center flex-shrink-0`}>
+                                <Icon icon={stat.icon} className={`w-5 h-5 sm:w-6 sm:h-6 text-${stat.color}-600`}/>
                             </div>
-                            <div>
-                                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                                <p className="text-sm text-gray-600">{stat.title}</p>
+                            <div className="min-w-0 flex-1">
+                                <p className="text-xl sm:text-2xl font-bold text-gray-900">{stat.value}</p>
+                                <p className="text-xs sm:text-sm text-gray-600 truncate">{stat.title}</p>
                             </div>
                         </CardBody>
                     </Card>
@@ -168,14 +168,14 @@ const Dashboard: React.FC = () =>
 
             {/* Quick Actions */}
             <div>
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {quickActions.map((action, index) => (
                         <Card key={index} className="hover:shadow-md transition-shadow cursor-pointer" isPressable>
-                            <CardBody className="p-6" onClick={action.action}>
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className={`p-3 rounded-lg bg-${action.color}-100 flex items-center justify-center`}>
-                                        <Icon icon={action.icon} className={`w-6 h-6 text-${action.color}-600`}/>
+                            <CardBody className="p-4 sm:p-6" onClick={action.action}>
+                                <div className="flex items-start justify-between mb-3 sm:mb-4">
+                                    <div className={`p-2 sm:p-3 rounded-lg bg-${action.color}-100 flex items-center justify-center flex-shrink-0`}>
+                                        <Icon icon={action.icon} className={`w-5 h-5 sm:w-6 sm:h-6 text-${action.color}-600`}/>
                                     </div>
                                     {action.badge && (
                                         <Chip color={action.color} size="sm">
@@ -183,8 +183,8 @@ const Dashboard: React.FC = () =>
                                         </Chip>
                                     )}
                                 </div>
-                                <h3 className="font-semibold text-gray-900 mb-2">{action.title}</h3>
-                                <p className="text-sm text-gray-600">{action.description}</p>
+                                <h3 className="font-semibold text-gray-900 mb-2 text-sm sm:text-base">{action.title}</h3>
+                                <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">{action.description}</p>
                             </CardBody>
                         </Card>
                     ))}
@@ -194,17 +194,18 @@ const Dashboard: React.FC = () =>
             {/* Recent Activity or Admin Panel */}
             {user?.role === "admin" && (
                 <div>
-                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Admin Panel</h2>
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4">Admin Panel</h2>
                     <Card>
-                        <CardHeader>
-                            <h3 className="text-lg font-medium">System Management</h3>
+                        <CardHeader className="p-4 sm:p-6">
+                            <h3 className="text-base sm:text-lg font-medium">System Management</h3>
                         </CardHeader>
-                        <CardBody className="flex flex-row gap-4">
+                        <CardBody className="flex flex-col sm:flex-row gap-3 sm:gap-4 p-4 sm:p-6 pt-0">
                             <Button
                                 color="primary"
                                 variant="flat"
                                 startContent={<Icon icon="lucide:users"/>}
                                 onPress={() => navigate("/app/admin/user-management")}
+                                className="w-full sm:w-auto min-h-[44px]"
                             >
                                 Manage Users
                             </Button>
@@ -213,6 +214,7 @@ const Dashboard: React.FC = () =>
                                 variant="flat"
                                 startContent={<Icon icon="lucide:package-plus"/>}
                                 onPress={() => navigate("/app/admin/product-management")}
+                                className="w-full sm:w-auto min-h-[44px]"
                             >
                                 Add Products
                             </Button>
@@ -221,6 +223,7 @@ const Dashboard: React.FC = () =>
                                 variant="flat"
                                 startContent={<Icon icon="lucide:bar-chart"/>}
                                 onPress={() => navigate("/app/admin/reports")}
+                                className="w-full sm:w-auto min-h-[44px]"
                             >
                                 View Reports
                             </Button>
