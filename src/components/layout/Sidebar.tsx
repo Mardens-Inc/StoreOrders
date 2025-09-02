@@ -84,7 +84,7 @@ const Sidebar: React.FC = () =>
 
     return (
         <Card className={`
-            w-64 h-full rounded-none border-r shadow-sm relative
+            w-72 h-full rounded-none border-r shadow-sm relative
             ${isMobile ? 'shadow-lg' : 'shadow-sm'}
         `}>
             <div className="p-4 sm:p-6 relative flex flex-col h-full">
