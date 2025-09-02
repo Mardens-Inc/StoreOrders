@@ -1,0 +1,48 @@
+meta {
+  name: Admin Create User
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/auth/admin/create-user
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "email": "newuser@mardens.com",
+    "role": "store",
+    "store_id": "hashed_store_id_here"
+  }
+}
+
+docs {
+  # Admin Create User (Passwordless)
+
+  Creates a new user account without requiring a password. User receives a setup email to configure their password.
+
+  ## Authentication
+  - Requires admin role
+  - Bearer token authentication required
+
+  ## Request Body
+  - `email` (string, required): User's email address (@mardens.com domain required)
+  - `role` (string, required): User role ("store" or "admin")
+  - `store_id` (string, optional): Required for store users, must be null for admin users
+
+  ## Response
+  - Success: User created and password setup email sent
+  - Error: Email already exists, invalid store, or email sending failure
+
+  ## Security Notes
+  - Only administrators can create users
+  - User receives welcome email with password setup link
+  - Setup token expires after 1 hour
+  - Replaces traditional user registration for admin-managed accounts
+}

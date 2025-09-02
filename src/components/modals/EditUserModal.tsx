@@ -20,7 +20,6 @@ interface User
 interface CreateUserRequest
 {
     email: string;
-    password: string;
     role: "store" | "admin";
     store_id?: string;
 }

@@ -84,6 +84,14 @@ pub struct RegisterRequest {
     pub store_id: Option<u64>, // Hashed store ID
 }
 
+#[derive(Debug, HashIds)]
+pub struct CreateUserRequest {
+    pub email: String,
+    pub role: UserRole,
+    #[hash]
+    pub store_id: Option<u64>, // Hashed store ID
+}
+
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
     pub user: UserResponse,
@@ -115,6 +123,33 @@ pub struct UpdateUserRequest {
     pub email: Option<String>,
     pub role: Option<String>,
     pub store_id: Option<String>, // Hashed store ID
+}
+
+// Password Reset Request Types
+#[derive(Debug, Deserialize)]
+pub struct ForgotPasswordRequest {
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ResetPasswordRequest {
+    pub token: String,
+    pub new_password: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AdminResetPasswordRequest {
+    pub user_id: String, // Hashed user ID
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
+pub struct PasswordResetToken {
+    pub id: u64,
+    pub user_id: u64,
+    pub token: String,
+    pub expires_at: DateTime<Utc>,
+    pub used: bool,
+    pub created_at: DateTime<Utc>,
 }
 
 fn serialize_lowercase<S>(value: &str, serializer: S) -> Result<S::Ok, S::Error>

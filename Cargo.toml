@@ -1,7 +1,7 @@
 [package]
 name = "store_orders"
-version = "0.0.0"
-edition = "2024"
+version = "0.0.1"
+edition = "2021"
 authors = ["Drew Chase (Work) <dcmanproductions@gmail.com>"]
 build = "src-actix/build.rs"
 
@@ -25,7 +25,6 @@ include_dir = "0.7.4"
 walkdir = "2.5.0"
 log = "0.4.22"
 anyhow = "1.0.95"
-thiserror = "2.0.11"
 vite-actix = {version = "0.2.6"}
 sqlx = { version = "0.8.6", features = ["mysql", "sqlx-mysql", "macros", "derive", "runtime-tokio", "chrono", "rust_decimal"] }
 chrono = { version = "0.4.41", features = ["now", "serde"] }
@@ -35,6 +34,8 @@ rust_decimal = { version = "1.36.0", features = ["serde"] }
 jsonwebtoken = "9.3.0"
 bcrypt = "0.17.0"
 actix-web-httpauth = "0.8.2"
+# Email dependencies for password reset
+lettre = { version = "0.11", default-features = false, features = ["tokio1-native-tls", "smtp-transport", "builder"] }
 # Mardens Inc. Libraries
 database-common-lib = { git = "https://github.com/Mardens-Inc/database-common-lib.git" }
 tokio = "1.46.0"

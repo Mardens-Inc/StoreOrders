@@ -2,11 +2,13 @@ pub mod auth_data;
 pub mod auth_db;
 pub mod auth_endpoint;
 pub mod auth_middleware;
+pub mod email_service;
 pub mod jwt;
 
 pub use auth_data::*;
 pub use auth_db::*;
 pub use auth_middleware::*;
+pub use email_service::*;
 pub use jwt::*;
 
 use actix_web::web;
@@ -25,6 +27,8 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
             .service(auth_endpoint::login)
             .service(auth_endpoint::register)
             .service(auth_endpoint::refresh)
+            .service(auth_endpoint::forgot_password)
+            .service(auth_endpoint::reset_password)
             // Protected endpoints (authentication required)
             .service(
                 web::scope("")
@@ -32,7 +36,9 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .service(auth_endpoint::me)
                     .service(auth_endpoint::get_users)
                     .service(auth_endpoint::update_user)
-                    .service(auth_endpoint::delete_user),
+                    .service(auth_endpoint::delete_user)
+                    .service(auth_endpoint::admin_reset_password)
+                    .service(auth_endpoint::admin_create_user),
             ),
     );
 }

@@ -1,8 +1,11 @@
+use crate::auth::email_service::EmailService;
 use crate::auth::{
-    auth_db, create_jwt_token, create_refresh_token, verify_refresh_token, verify_user_password, AuthResponse,
-    ClaimsExtractor, LoginRequest, RefreshRequest, RegisterRequest, UserResponse, UpdateUserRequest,
+    auth_db, create_jwt_token, create_refresh_token, verify_refresh_token, verify_user_password,
+    AuthResponse, ClaimsExtractor, CreateUserRequest, LoginRequest, RefreshRequest,
+    RegisterRequest, UpdateUserRequest, UserResponse,
+    ForgotPasswordRequest, ResetPasswordRequest, AdminResetPasswordRequest
 };
-use actix_web::{get, post, put, delete, web, HttpRequest, HttpResponse, Result};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Result};
 use database_common_lib::database_connection::DatabaseConnectionData;
 use serde_json::json;
 
@@ -293,17 +296,16 @@ pub async fn get_users(
 
     match auth_db::get_all_users(&pool).await {
         Ok(users) => {
-            let user_responses: Vec<UserResponse> = users.into_iter().map(UserResponse::from).collect();
+            let user_responses: Vec<UserResponse> =
+                users.into_iter().map(UserResponse::from).collect();
             Ok(HttpResponse::Ok().json(json!({
                 "success": true,
                 "data": user_responses
             })))
         }
-        Err(e) => {
-            Ok(HttpResponse::InternalServerError().json(json!({
-                "error": format!("Failed to fetch users: {}", e)
-            })))
-        }
+        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
+            "error": format!("Failed to fetch users: {}", e)
+        }))),
     }
 }
 
@@ -359,23 +361,25 @@ pub async fn update_user(
         None
     };
 
-    match auth_db::update_user(&pool, user_id, &update_req.email, &update_req.role, store_id).await {
-        Ok(Some(user)) => {
-            Ok(HttpResponse::Ok().json(json!({
-                "success": true,
-                "data": UserResponse::from(user)
-            })))
-        }
-        Ok(None) => {
-            Ok(HttpResponse::NotFound().json(json!({
-                "error": "User not found"
-            })))
-        }
-        Err(e) => {
-            Ok(HttpResponse::InternalServerError().json(json!({
-                "error": format!("Failed to update user: {}", e)
-            })))
-        }
+    match auth_db::update_user(
+        &pool,
+        user_id,
+        &update_req.email,
+        &update_req.role,
+        store_id,
+    )
+    .await
+    {
+        Ok(Some(user)) => Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "data": UserResponse::from(user)
+        }))),
+        Ok(None) => Ok(HttpResponse::NotFound().json(json!({
+            "error": "User not found"
+        }))),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
+            "error": format!("Failed to update user: {}", e)
+        }))),
     }
 }
 
@@ -426,21 +430,342 @@ pub async fn delete_user(
     }
 
     match auth_db::delete_user(&pool, user_id).await {
-        Ok(true) => {
-            Ok(HttpResponse::Ok().json(json!({
-                "success": true,
-                "message": "User deleted successfully"
-            })))
+        Ok(true) => Ok(HttpResponse::Ok().json(json!({
+            "success": true,
+            "message": "User deleted successfully"
+        }))),
+        Ok(false) => Ok(HttpResponse::NotFound().json(json!({
+            "error": "User not found"
+        }))),
+        Err(e) => Ok(HttpResponse::InternalServerError().json(json!({
+            "error": format!("Failed to delete user: {}", e)
+        }))),
+    }
+}
+
+// Password Reset Endpoints
+
+#[post("/forgot-password")]
+pub async fn forgot_password(
+    forgot_req: web::Json<ForgotPasswordRequest>,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<HttpResponse> {
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
         }
-        Ok(false) => {
-            Ok(HttpResponse::NotFound().json(json!({
-                "error": "User not found"
-            })))
+    };
+
+    // Find user by email
+    let user = match auth_db::find_user_by_email(&pool, &forgot_req.email).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            // Return success even if user doesn't exist for security
+            return Ok(HttpResponse::Ok().json(json!({
+                "success": true,
+                "message": "If the email exists in our system, you will receive a password reset link."
+            })));
         }
         Err(e) => {
-            Ok(HttpResponse::InternalServerError().json(json!({
-                "error": format!("Failed to delete user: {}", e)
-            })))
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database error: {}", e)
+            })));
+        }
+    };
+
+    // Create password reset token
+    let reset_token = match auth_db::create_password_reset_token(&pool, user.id).await {
+        Ok(token) => token,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Failed to create reset token: {}", e)
+            })));
+        }
+    };
+
+    // Send password reset email
+    let email_service = match EmailService::new() {
+        Ok(service) => service,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Email service initialization failed: {}", e)
+            })));
+        }
+    };
+
+    if let Err(e) = email_service
+        .send_password_reset_email(&user.email, &reset_token, false)
+        .await
+    {
+        log::error!("Failed to send password reset email: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(json!({
+            "error": "Failed to send password reset email"
+        })));
+    }
+
+    Ok(HttpResponse::Ok().json(json!({
+        "success": true,
+        "message": "If the email exists in our system, you will receive a password reset link."
+    })))
+}
+
+#[post("/reset-password")]
+pub async fn reset_password(
+    reset_req: web::Json<ResetPasswordRequest>,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<HttpResponse> {
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+
+    // Validate reset token
+    let token_record = match auth_db::find_password_reset_token(&pool, &reset_req.token).await {
+        Ok(Some(token)) => token,
+        Ok(None) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "error": "Invalid or expired reset token"
+            })));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database error: {}", e)
+            })));
+        }
+    };
+
+    // Validate password strength (basic validation)
+    if reset_req.new_password.len() < 8 {
+        return Ok(HttpResponse::BadRequest().json(json!({
+            "error": "Password must be at least 8 characters long"
+        })));
+    }
+
+    // Update user password
+    match auth_db::update_user_password(&pool, token_record.user_id, &reset_req.new_password).await
+    {
+        Ok(true) => {}
+        Ok(false) => {
+            return Ok(HttpResponse::NotFound().json(json!({
+                "error": "User not found"
+            })));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Failed to update password: {}", e)
+            })));
         }
     }
+
+    // Mark token as used
+    if let Err(e) = auth_db::use_password_reset_token(&pool, &reset_req.token).await {
+        log::error!("Failed to mark reset token as used: {}", e);
+    }
+
+    Ok(HttpResponse::Ok().json(json!({
+        "success": true,
+        "message": "Password updated successfully"
+    })))
+}
+
+#[post("/admin/reset-password")]
+pub async fn admin_reset_password(
+    req: HttpRequest,
+    reset_req: web::Json<AdminResetPasswordRequest>,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<HttpResponse> {
+    // Check if user is admin
+    if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    }
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+
+    let user_id = match serde_hash::hashids::decode_single(&reset_req.user_id) {
+        Ok(id) => id,
+        Err(_) => {
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "error": "Invalid user ID"
+            })));
+        }
+    };
+
+    // Get user details
+    let user = match auth_db::find_user_by_id(&pool, user_id).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Ok(HttpResponse::NotFound().json(json!({
+                "error": "User not found"
+            })));
+        }
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database error: {}", e)
+            })));
+        }
+    };
+
+    // Create password reset token
+    let reset_token = match auth_db::create_password_reset_token(&pool, user.id).await {
+        Ok(token) => token,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Failed to create reset token: {}", e)
+            })));
+        }
+    };
+
+    // Send password reset email
+    let email_service = match EmailService::new() {
+        Ok(service) => service,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Email service initialization failed: {}", e)
+            })));
+        }
+    };
+
+    if let Err(e) = email_service
+        .send_password_reset_email(&user.email, &reset_token, false)
+        .await
+    {
+        log::error!("Failed to send password reset email: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(json!({
+            "error": "Failed to send password reset email"
+        })));
+    }
+
+    Ok(HttpResponse::Ok().json(json!({
+        "success": true,
+        "message": format!("Password reset email sent to {}", user.email)
+    })))
+}
+
+#[post("/admin/create-user")]
+pub async fn admin_create_user(
+    req: HttpRequest,
+    create_req: web::Json<CreateUserRequest>,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<HttpResponse> {
+    // Check if user is admin
+    if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    }
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+
+    // Decode store_id if provided
+    let store_id = create_req.store_id;
+
+    // Verify store exists if store_id is provided
+    if let Some(store_id) = store_id {
+        match auth_db::verify_store_exists(&pool, store_id).await {
+            Ok(true) => {}
+            Ok(false) => {
+                return Ok(HttpResponse::BadRequest().json(json!({
+                    "error": "Store does not exist"
+                })));
+            }
+            Err(e) => {
+                return Ok(HttpResponse::InternalServerError().json(json!({
+                    "error": format!("Store verification failed: {}", e)
+                })));
+            }
+        }
+    }
+
+    // Create user without password
+    let user = match auth_db::create_user_without_password(
+        &pool,
+        &create_req.email,
+        create_req.role.clone(),
+        store_id,
+    )
+    .await
+    {
+        Ok(user) => user,
+        Err(e) => {
+            if e.to_string().contains("Duplicate entry") {
+                return Ok(HttpResponse::Conflict().json(json!({
+                    "error": "Email already exists"
+                })));
+            }
+            return Ok(HttpResponse::BadRequest().json(json!({
+                "error": format!("User creation failed: {}", e)
+            })));
+        }
+    };
+
+    // Create password setup token
+    let reset_token = match auth_db::create_password_reset_token(&pool, user.id).await {
+        Ok(token) => token,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Failed to create setup token: {}", e)
+            })));
+        }
+    };
+
+    // Send password setup email
+    let email_service = match EmailService::new() {
+        Ok(service) => service,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Email service initialization failed: {}", e)
+            })));
+        }
+    };
+
+    if let Err(e) = email_service
+        .send_password_reset_email(&user.email, &reset_token, true)
+        .await
+    {
+        log::error!("Failed to send password setup email: {}", e);
+        return Ok(HttpResponse::InternalServerError().json(json!({
+            "error": "Failed to send password setup email"
+        })));
+    }
+
+    Ok(HttpResponse::Created().json(json!({
+        "success": true,
+        "data": UserResponse::from(user.clone()),
+        "message": format!("User created and password setup email sent to {}", user.email)
+    })))
 }

@@ -135,6 +135,20 @@ const Login: React.FC = () =>
                         </Button>
                     </Form>
 
+                    <div className="mt-4 text-center">
+                        <Button
+                            variant="light"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-800"
+                            onPress={() => {
+                                // TODO: Implement forgot password functionality
+                                window.location.href = `/forgot-password?email=${encodeURIComponent(email)}`;
+                            }}
+                        >
+                            Forgot your password?
+                        </Button>
+                    </div>
+
                     <div className="mt-6 text-center">
                         <p className="text-xs text-gray-500 mb-2">
                             Need help accessing your account?

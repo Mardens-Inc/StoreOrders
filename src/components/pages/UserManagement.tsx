@@ -26,7 +26,6 @@ interface Store
 interface CreateUserRequest
 {
     email: string;
-    password: string;
     role: "store" | "admin";
     store_id?: string;
 }
@@ -42,7 +41,6 @@ const UserManagement: React.FC = () =>
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [formData, setFormData] = useState<CreateUserRequest>({
         email: "",
-        password: "",
         role: "store",
         store_id: ""
     });
@@ -92,23 +90,30 @@ const UserManagement: React.FC = () =>
             setActionLoading(true);
             const payload = {
                 email: formData.email,
-                password: formData.password,
                 role: formData.role,
                 store_id: formData.store_id || undefined
             };
 
-            const response = await authApi.register(
-                payload.email,
-                payload.password,
-                payload.role,
-                payload.store_id
-            ) as any;
+            // Use the new admin create user endpoint that sends setup emails
+            const response = await fetch("/api/auth/admin/create-user", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify(payload),
+            });
 
-            if (response.success || response.user)
+            const data = await response.json();
+
+            if (response.ok && data.success)
             {
                 await loadData();
                 onCreateOpenChange();
-                setFormData({email: "", password: "", role: "store", store_id: ""});
+                setFormData({email: "", role: "store", store_id: ""});
+            } else
+            {
+                console.error("Failed to create user:", data.error);
             }
         } catch (error)
         {
@@ -173,12 +178,40 @@ const UserManagement: React.FC = () =>
         }
     };
 
+    const handleResetPassword = async (userId: string) =>
+    {
+        try
+        {
+            const response = await fetch("/api/auth/admin/reset-password", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({ user_id: userId }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success)
+            {
+                // Show success message or notification
+                console.log("Password reset email sent successfully");
+            } else
+            {
+                console.error("Failed to send reset email:", data.error);
+            }
+        } catch (error)
+        {
+            console.error("Failed to send reset email:", error);
+        }
+    };
+
     const openEditModal = (user: User) =>
     {
         setSelectedUser(user);
         setFormData({
             email: user.email,
-            password: "", // Don't populate password for editing
             role: user.role,
             store_id: user.store_id || ""
         });
@@ -276,6 +309,16 @@ const UserManagement: React.FC = () =>
                                                     onPress={() => openEditModal(user)}
                                                 >
                                                     <Icon icon="lucide:edit" className="w-4 h-4"/>
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="flat"
+                                                    color="warning"
+                                                    isIconOnly
+                                                    onPress={() => handleResetPassword(user.id)}
+                                                    title="Reset Password"
+                                                >
+                                                    <Icon icon="lucide:key" className="w-4 h-4"/>
                                                 </Button>
                                                 <Button
                                                     size="sm"

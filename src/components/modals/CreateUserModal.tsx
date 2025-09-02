@@ -9,7 +9,6 @@ interface Store {
 
 interface CreateUserRequest {
     email: string;
-    password: string;
     role: "store" | "admin";
     store_id?: string;
 }
@@ -59,13 +58,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                                 onChange={(e) => setFormData({...formData, email: e.target.value})}
                                 isRequired
                             />
-                            <Input
-                                label="Password"
-                                type="password"
-                                value={formData.password}
-                                onChange={(e) => setFormData({...formData, password: e.target.value})}
-                                isRequired
-                            />
                             <Select
                                 label="Role"
                                 selectedKeys={[formData.role]}
@@ -102,7 +94,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                                 color="primary"
                                 onPress={onCreateUser}
                                 isLoading={actionLoading}
-                                isDisabled={!formData.email || !formData.password}
+                                isDisabled={!formData.email}
                             >
                                 Create User
                             </Button>

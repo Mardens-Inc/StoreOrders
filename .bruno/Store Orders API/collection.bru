@@ -1,4 +1,12 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjIsImVtYWlsIjoiZHJldy5jaGFzZUBtYXJkZW5zLmNvbSIsInJvbGUiOiJhZG1pbiIsInN0b3JlX2lkIjpudWxsLCJleHAiOjE3NTY5MTA3MDMsImlhdCI6MTc1NjgyNDMwM30.cpHPMiMMSZu6oXpzDd15VJaeIqJcnm25ch1W4-lMjsE
+}
+
 vars:pre-request {
-  baseUrl: https://store-orders.mardens.com/api
-  ~baseUrl: http://127.0.0.1:1422/api
+  baseUrl: http://127.0.0.1:1422/api
+  ~baseUrl: https://store-orders.mardens.com/api
 }

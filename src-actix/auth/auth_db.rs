@@ -1,11 +1,12 @@
-use crate::auth::{User, UserRole};
+use crate::auth::{User, UserRole, PasswordResetToken};
 use anyhow::Result;
 use bcrypt::{hash, verify, DEFAULT_COST};
-use chrono::Utc;
+use chrono::{Duration, Utc};
 use sqlx::MySqlPool;
+use uuid::Uuid;
 
 pub async fn create_tables(pool: &MySqlPool) -> Result<()> {
-    // Create users table
+    // Create a user's table
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS users (
@@ -25,6 +26,26 @@ pub async fn create_tables(pool: &MySqlPool) -> Result<()> {
     .execute(pool)
     .await?;
 
+
+    // Create a password reset tokens table
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            user_id BIGINT UNSIGNED NOT NULL,
+            token VARCHAR(255) NOT NULL UNIQUE,
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_token (token),
+            INDEX idx_user_id (user_id),
+            INDEX idx_expires_at (expires_at),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+        "#,
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
@@ -213,4 +234,96 @@ pub async fn delete_user(pool: &MySqlPool, user_id: u64) -> Result<bool> {
     .await?;
 
     Ok(result.rows_affected() > 0)
+}
+
+// Password Reset Functions
+
+pub async fn create_password_reset_token(pool: &MySqlPool, user_id: u64) -> Result<String> {
+    // Generate a unique token
+    let token = Uuid::new_v4().to_string();
+    let expires_at = Utc::now() + Duration::hours(1); // 1 hour expiration
+
+    // Invalidate any existing tokens for this user
+    sqlx::query(
+        "UPDATE password_reset_tokens SET used = TRUE WHERE user_id = ? AND used = FALSE"
+    )
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    // Create new token
+    sqlx::query(
+        r#"
+        INSERT INTO password_reset_tokens (user_id, token, expires_at)
+        VALUES (?, ?, ?)
+        "#,
+    )
+    .bind(user_id)
+    .bind(&token)
+    .bind(expires_at)
+    .execute(pool)
+    .await?;
+
+    Ok(token)
+}
+
+pub async fn find_password_reset_token(pool: &MySqlPool, token: &str) -> Result<Option<PasswordResetToken>> {
+    let token_record = sqlx::query_as::<_, PasswordResetToken>(
+        r#"
+        SELECT id, user_id, token, expires_at, used, created_at
+        FROM password_reset_tokens
+        WHERE token = ? AND used = FALSE AND expires_at > NOW()
+        "#,
+    )
+    .bind(token)
+    .fetch_optional(pool)
+    .await?;
+
+    Ok(token_record)
+}
+
+pub async fn use_password_reset_token(pool: &MySqlPool, token: &str) -> Result<bool> {
+    let result = sqlx::query(
+        "UPDATE password_reset_tokens SET used = TRUE WHERE token = ? AND used = FALSE"
+    )
+    .bind(token)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
+pub async fn update_user_password(pool: &MySqlPool, user_id: u64, new_password: &str) -> Result<bool> {
+    let password_hash = hash(new_password, DEFAULT_COST)?;
+
+    let result = sqlx::query(
+        "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+    )
+    .bind(&password_hash)
+    .bind(user_id)
+    .execute(pool)
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
+pub async fn create_user_without_password(
+    pool: &MySqlPool,
+    email: &str,
+    role: UserRole,
+    store_id: Option<u64>,
+) -> Result<User> {
+    // Generate a temporary random password that the user will need to reset
+    let temp_password = Uuid::new_v4().to_string();
+    create_user(pool, email, &temp_password, role, store_id).await
+}
+
+pub async fn cleanup_expired_tokens(pool: &MySqlPool) -> Result<()> {
+    sqlx::query(
+        "DELETE FROM password_reset_tokens WHERE expires_at < NOW()"
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
 }
