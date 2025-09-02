@@ -64,9 +64,9 @@ const ResetPassword: React.FC = () => {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     token,
-                    new_password: newPassword 
+                    new_password: newPassword
                 }),
             });
 
@@ -74,6 +74,9 @@ const ResetPassword: React.FC = () => {
 
             if (response.ok && data.success) {
                 setSuccess(true);
+                // remove authentication token from local storage
+                localStorage.removeItem("auth_token");
+
                 // Redirect to login after 3 seconds
                 setTimeout(() => {
                     navigate("/login");
@@ -149,6 +152,7 @@ const ResetPassword: React.FC = () => {
                             isRequired
                             variant="bordered"
                             description="Must be at least 8 characters with uppercase, lowercase, and number"
+                            autoComplete="new-password webauthn"
                             classNames={{
                                 input: "text-sm",
                                 label: "text-sm font-medium"

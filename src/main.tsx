@@ -8,12 +8,13 @@ import ForgotPassword from "./components/auth/ForgotPassword";
 import ResetPassword from "./components/auth/ResetPassword";
 import AppLayout from "./components/layout/AppLayout";
 import {HeroUIProvider} from "@heroui/react";
+import {ToastProvider} from "@heroui/toast";
 import {AuthProvider} from "./providers/AuthProvider";
 import {CartProvider} from "./providers/CartProvider";
 
-
 const rootElement = document.getElementById("root");
-if (!rootElement) {
+if (!rootElement)
+{
     throw new Error("Root element with id 'root' not found");
 }
 
@@ -30,6 +31,9 @@ export function MainContentRenderer()
     const navigate = useNavigate();
     return (
         <HeroUIProvider navigate={navigate}>
+            <ToastProvider
+                placement={"bottom-right"}
+            />
             <AuthProvider>
                 <CartProvider>
                     <Routes>

@@ -1,11 +1,13 @@
 import React, {useEffect, useState} from "react";
 import {Button, Card, CardBody, CardHeader, Chip, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
+import {addToast} from "@heroui/toast";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {apiClient, authApi} from "../../utils/api";
 import CreateUserModal from "../modals/CreateUserModal";
 import EditUserModal from "../modals/EditUserModal";
 import DeleteUserModal from "../modals/DeleteUserModal";
+import ResetPasswordModal from "../modals/ResetPasswordModal";
 
 interface User
 {
@@ -38,7 +40,9 @@ const UserManagement: React.FC = () =>
     const [stores, setStores] = useState<Store[]>([]);
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
+    const [userToReset, setUserToReset] = useState<User | null>(null);
     const [formData, setFormData] = useState<CreateUserRequest>({
         email: "",
         role: "store",
@@ -48,6 +52,7 @@ const UserManagement: React.FC = () =>
     const {isOpen: isCreateOpen, onOpen: onCreateOpen, onOpenChange: onCreateOpenChange} = useDisclosure();
     const {isOpen: isEditOpen, onOpen: onEditOpen, onOpenChange: onEditOpenChange} = useDisclosure();
     const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
+    const {isOpen: isResetPasswordOpen, onOpen: onResetPasswordOpen, onOpenChange: onResetPasswordOpenChange} = useDisclosure();
 
     // Load users and stores on component mount
     useEffect(() =>
@@ -62,7 +67,7 @@ const UserManagement: React.FC = () =>
             setLoading(true);
             const [usersResponse, storesResponse] = await Promise.all([
                 authApi.getUsers(),
-                apiClient.get<{success: boolean, data: Store[]}>("/stores")
+                apiClient.get<{ success: boolean, data: Store[] }>("/stores")
             ]);
 
             if (usersResponse.success)
@@ -91,7 +96,7 @@ const UserManagement: React.FC = () =>
             const payload = {
                 email: formData.email,
                 role: formData.role,
-                store_id: formData.store_id || undefined
+                store_id: formData.store_id || null
             };
 
             // Use the new admin create user endpoint that sends setup emails
@@ -99,9 +104,9 @@ const UserManagement: React.FC = () =>
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                    "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
                 },
-                body: JSON.stringify(payload),
+                body: JSON.stringify(payload)
             });
 
             const data = await response.json();
@@ -178,32 +183,58 @@ const UserManagement: React.FC = () =>
         }
     };
 
-    const handleResetPassword = async (userId: string) =>
+    const handleResetPasswordClick = (user: User) =>
     {
+        setUserToReset(user);
+        onResetPasswordOpen();
+    };
+
+    const handleResetPassword = async () =>
+    {
+        if (!userToReset) return;
+
         try
         {
+            setResetPasswordLoading(true);
             const response = await fetch("/api/auth/admin/reset-password", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                    "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
                 },
-                body: JSON.stringify({ user_id: userId }),
+                body: JSON.stringify({user_id: userToReset.id})
             });
 
             const data = await response.json();
 
             if (response.ok && data.success)
             {
-                // Show success message or notification
-                console.log("Password reset email sent successfully");
+                addToast({
+                    title: "Password Reset Email Sent",
+                    description: `Reset instructions have been sent to ${userToReset.email}`,
+                    color: "success"
+                });
+                onResetPasswordOpenChange();
+                setUserToReset(null);
             } else
             {
-                console.error("Failed to send reset email:", data.error);
+                addToast({
+                    title: "Failed to Send Reset Email",
+                    description: data.error || "An unexpected error occurred while sending the reset email.",
+                    color: "danger"
+                });
             }
         } catch (error)
         {
             console.error("Failed to send reset email:", error);
+            addToast({
+                title: "Network Error",
+                description: "Unable to send reset email. Please check your connection and try again.",
+                color: "danger"
+            });
+        } finally
+        {
+            setResetPasswordLoading(false);
         }
     };
 
@@ -315,7 +346,7 @@ const UserManagement: React.FC = () =>
                                                     variant="flat"
                                                     color="warning"
                                                     isIconOnly
-                                                    onPress={() => handleResetPassword(user.id)}
+                                                    onPress={() => handleResetPasswordClick(user)}
                                                     title="Reset Password"
                                                 >
                                                     <Icon icon="lucide:key" className="w-4 h-4"/>
@@ -370,6 +401,15 @@ const UserManagement: React.FC = () =>
                 onDeleteUser={handleDeleteUser}
                 actionLoading={actionLoading}
                 selectedUser={selectedUser}
+            />
+
+            {/* Reset Password Modal */}
+            <ResetPasswordModal
+                isOpen={isResetPasswordOpen}
+                onOpenChange={onResetPasswordOpenChange}
+                onResetPassword={handleResetPassword}
+                actionLoading={resetPasswordLoading}
+                selectedUser={userToReset}
             />
         </div>
     );
