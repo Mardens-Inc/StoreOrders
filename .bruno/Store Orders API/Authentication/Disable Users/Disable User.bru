@@ -1,0 +1,23 @@
+meta {
+  name: Disable User
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/admin/disable-user
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "user_id": "",
+    "reason": "",
+    "expiration": ""
+  }
+}
+
+settings {
+  encodeUrl: true
+}

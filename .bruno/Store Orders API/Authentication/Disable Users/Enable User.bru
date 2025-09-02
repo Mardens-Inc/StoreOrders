@@ -1,0 +1,27 @@
+meta {
+  name: Enable User
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/admin/enable-user/:user_id
+  body: none
+  auth: inherit
+}
+
+params:path {
+  user_id: 
+}
+
+body:json {
+  {
+    "user_id": "",
+    "reason": "",
+    "expiration": ""
+  }
+}
+
+settings {
+  encodeUrl: true
+}

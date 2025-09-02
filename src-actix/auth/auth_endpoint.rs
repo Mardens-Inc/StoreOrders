@@ -1,12 +1,16 @@
+use crate::auth::disabled_users::DisabledUser;
 use crate::auth::email_service::EmailService;
 use crate::auth::{
     auth_db, create_jwt_token, create_refresh_token, verify_refresh_token, verify_user_password,
-    AuthResponse, ClaimsExtractor, CreateUserRequest, LoginRequest, RefreshRequest,
-    RegisterRequest, UpdateUserRequest, UserResponse,
-    ForgotPasswordRequest, ResetPasswordRequest, AdminResetPasswordRequest
+    AdminResetPasswordRequest, AuthResponse, ClaimsExtractor, CreateUserRequest,
+    ForgotPasswordRequest, LoginRequest, RefreshRequest, RegisterRequest, ResetPasswordRequest,
+    UpdateUserRequest, User, UserResponse,
 };
-use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Result};
+use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use database_common_lib::database_connection::DatabaseConnectionData;
+use database_common_lib::http_error::Result;
+use jsonwebtoken::decode;
+use serde_hash::hashids::decode_single;
 use serde_json::json;
 
 #[post("/login")]
@@ -338,7 +342,7 @@ pub async fn update_user(
         }
     };
 
-    let user_id = match serde_hash::hashids::decode_single(&path.as_str()) {
+    let user_id = match decode_single(&path.as_str()) {
         Ok(id) => id,
         Err(_) => {
             return Ok(HttpResponse::BadRequest().json(json!({
@@ -349,7 +353,7 @@ pub async fn update_user(
 
     // Decode store_id if provided
     let store_id = if let Some(store_id_str) = &update_req.store_id {
-        match serde_hash::hashids::decode_single(store_id_str) {
+        match decode_single(store_id_str) {
             Ok(id) => Some(id),
             Err(_) => {
                 return Ok(HttpResponse::BadRequest().json(json!({
@@ -768,4 +772,144 @@ pub async fn admin_create_user(
         "data": UserResponse::from(user.clone()),
         "message": format!("User created and password setup email sent to {}", user.email)
     })))
+}
+
+#[get("/admin/disabled-users")]
+pub async fn get_disabled_users(
+    req: HttpRequest,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<impl Responder> {
+    // Check if user is admin
+    if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    }
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+
+    let users = DisabledUser::list(&pool).await?;
+    Ok(HttpResponse::Ok().json(users))
+}
+#[get("/admin/disabled-users/{user_id}")]
+pub async fn get_disabled_user(
+    user_id: web::Path<String>,
+    req: HttpRequest,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<impl Responder> {
+    // Check if user is admin
+    if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    }
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+
+    let user_id = decode_single(user_id.to_string())?;
+    let users = DisabledUser::get(user_id, &pool).await?;
+    if users.is_none() {
+        return Ok(HttpResponse::NotFound().json(json!({
+            "error": "User not found"
+        })));
+    }
+    Ok(HttpResponse::Ok().json(users))
+}
+
+#[post("/admin/disable-user")]
+pub async fn disable_user(
+    body: web::Json<DisabledUser>,
+    req: HttpRequest,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<impl Responder> {
+    // Check if user is admin
+    let claim = if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+        claims
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    };
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+    let mut body = body.into_inner();
+    body.disabled_at = chrono::Utc::now();
+    body.disabled_by = claim.sub;
+
+    body.save(&pool).await?;
+    Ok(HttpResponse::Ok().finish())
+}
+
+#[post("/admin/enable-user/{user_id}")]
+pub async fn enable_user(
+    user_id: web::Path<String>,
+    req: HttpRequest,
+    db_data: web::Data<DatabaseConnectionData>,
+) -> Result<impl Responder> {
+    // Check if user is admin
+    if let Some(claims) = req.get_claims() {
+        if claims.role != "admin" {
+            return Ok(HttpResponse::Forbidden().json(json!({
+                "error": "Admin access required"
+            })));
+        }
+    } else {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "error": "Authentication required"
+        })));
+    }
+
+    let pool = match db_data.get_pool().await {
+        Ok(pool) => pool,
+        Err(e) => {
+            return Ok(HttpResponse::InternalServerError().json(json!({
+                "error": format!("Database connection failed: {}", e)
+            })));
+        }
+    };
+    let user_id = decode_single(user_id.to_string())?;
+    let disabled_user = DisabledUser::get(user_id, &pool).await?;
+    if let Some(disabled_user) = disabled_user {
+        disabled_user.delete(&pool).await?;
+    }
+
+    Ok(HttpResponse::Ok().finish())
 }

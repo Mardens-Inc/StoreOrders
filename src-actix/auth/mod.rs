@@ -2,6 +2,7 @@ pub mod auth_data;
 pub mod auth_db;
 pub mod auth_endpoint;
 pub mod auth_middleware;
+mod disabled_users;
 pub mod email_service;
 pub mod jwt;
 
@@ -16,7 +17,8 @@ use actix_web_httpauth::middleware::HttpAuthentication;
 use sqlx::MySqlPool;
 
 pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
-    auth_db::create_tables(pool).await?;
+    create_tables(pool).await?;
+    disabled_users::initialize(pool).await?;
     Ok(())
 }
 
@@ -38,7 +40,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
                     .service(auth_endpoint::update_user)
                     .service(auth_endpoint::delete_user)
                     .service(auth_endpoint::admin_reset_password)
-                    .service(auth_endpoint::admin_create_user),
+                    .service(auth_endpoint::admin_create_user)
+                    .service(auth_endpoint::disable_user)
+                    .service(auth_endpoint::get_disabled_user)
+                    .service(auth_endpoint::get_disabled_users)
+                    .service(auth_endpoint::enable_user)
+                
+                ,
             ),
     );
 }

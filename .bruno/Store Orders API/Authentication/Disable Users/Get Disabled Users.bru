@@ -1,0 +1,15 @@
+meta {
+  name: Get Disabled Users
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/auth/admin/disabled-users
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

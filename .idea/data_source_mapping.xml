@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourcePerFileMappings">
+    <file url="mock:///MySQL Fragment (disabled_users.rs:353).sql" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
+    <file url="mock:///MySQL Fragment (disabled_users.rs:455).sql" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
     <file url="file://$APPLICATION_CONFIG_DIR$/consoles/db/69872925-d1a1-4e3d-abc0-c32a0cd69971/console.sql" value="69872925-d1a1-4e3d-abc0-c32a0cd69971" />
     <file url="file://$PROJECT_DIR$/src-actix/auth/auth_db.rs" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
+    <file url="file://$PROJECT_DIR$/src-actix/auth/disabled_users.rs" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
     <file url="file://$PROJECT_DIR$/src-actix/orders/orders_db.rs" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
     <file url="file://$PROJECT_DIR$/src-actix/orders/orders_endpoint.rs" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />
     <file url="file://$PROJECT_DIR$/src-actix/products/products_db.rs" value="1500a6c5-8343-498b-bcba-2b4aa3369893" />

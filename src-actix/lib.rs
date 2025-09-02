@@ -32,6 +32,7 @@ pub async fn run() -> Result<()> {
         .init();
     set_database_name("stores")?;
     let connection_data = DatabaseConnectionData::get().await?;
+
     let pool = connection_data.get_pool().await?;
 
     if DEBUG {
@@ -52,18 +53,16 @@ pub async fn run() -> Result<()> {
     // Start the Vite server in development mode
     if DEBUG {
         ProxyViteOptions::new().disable_logging().build()?;
-        std::thread::spawn(|| {
-            loop {
-                info!("Starting Vite server in development mode...");
-                let status = start_vite_server()
-                    .expect("Failed to start vite server")
-                    .wait()
-                    .expect("Vite server crashed!");
-                if !status.success() {
-                    error!("The vite server has crashed!");
-                } else {
-                    break;
-                }
+        std::thread::spawn(|| loop {
+            info!("Starting Vite server in development mode...");
+            let status = start_vite_server()
+                .expect("Failed to start vite server")
+                .wait()
+                .expect("Vite server crashed!");
+            if !status.success() {
+                error!("The vite server has crashed!");
+            } else {
+                break;
             }
         });
     }

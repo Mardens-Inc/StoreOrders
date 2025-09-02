@@ -1,7 +1,9 @@
+use crate::auth::disabled_users::DisabledUser;
 use crate::auth::{verify_jwt_token, Claims};
-use actix_web::{dev::ServiceRequest, Error, HttpMessage};
+use actix_web::{dev::ServiceRequest, web, Error, HttpMessage};
 use actix_web_httpauth::extractors::bearer::{BearerAuth, Config};
 use actix_web_httpauth::extractors::AuthenticationError;
+use serde_json::json;
 
 pub async fn jwt_validator(
     req: ServiceRequest,
@@ -11,6 +13,45 @@ pub async fn jwt_validator(
 
     match verify_jwt_token(token) {
         Ok(claims) => {
+            let user_id = claims.sub;
+            let db_data = req.app_data::<web::Data<database_common_lib::database_connection::DatabaseConnectionData>>().unwrap();
+            let pool = match db_data.get_pool().await {
+                Ok(pool) => pool,
+                Err(_) => {
+                    let config = req
+                        .app_data::<Config>()
+                        .cloned()
+                        .unwrap_or_default()
+                        .scope("");
+                    return Err((AuthenticationError::from(config).into(), req));
+                }
+            };
+            match DisabledUser::get(user_id, &pool).await {
+                Ok(user) => {
+                    if let Some(user) = user {
+                        let body = json!({
+                            "message": "User is disabled!",
+                            "reason": user.reason,
+                            "expiration": user.expiration
+                        });
+                        let error_response = actix_web::HttpResponse::Forbidden().json(body);
+                        return Err((
+                            actix_web::error::InternalError::from_response("", error_response)
+                                .into(),
+                            req,
+                        ));
+                    }
+                }
+                Err(_) => {
+                    let config = req
+                        .app_data::<Config>()
+                        .cloned()
+                        .unwrap_or_default()
+                        .scope("");
+                    return Err((AuthenticationError::from(config).into(), req));
+                }
+            }
+            pool.close().await;
             req.extensions_mut().insert(claims);
             Ok(req)
         }
