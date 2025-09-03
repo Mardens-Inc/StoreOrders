@@ -4,12 +4,11 @@ use crate::auth::{
     auth_db, create_jwt_token, create_refresh_token, verify_refresh_token, verify_user_password,
     AdminResetPasswordRequest, AuthResponse, ClaimsExtractor, CreateUserRequest,
     ForgotPasswordRequest, LoginRequest, RefreshRequest, RegisterRequest, ResetPasswordRequest,
-    UpdateUserRequest, User, UserResponse,
+    UpdateUserRequest, UserResponse,
 };
 use actix_web::{delete, get, post, put, web, HttpRequest, HttpResponse, Responder};
 use database_common_lib::database_connection::DatabaseConnectionData;
 use database_common_lib::http_error::Result;
-use jsonwebtoken::decode;
 use serde_hash::hashids::decode_single;
 use serde_json::json;
 
