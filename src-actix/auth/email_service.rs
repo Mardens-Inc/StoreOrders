@@ -12,15 +12,22 @@ pub struct EmailService {
 impl EmailService {
     pub fn new() -> Result<Self> {
         debug!("Initializing EmailService");
-        let smtp_host = "smtp.office365.com";
-        let username = "emailuser@mardens.com";
-        let password = "M@rdensM55";
+
+        let smtp_host =
+            std::env::var("SMTP_HOST").unwrap_or_else(|_| "smtp.office365.com".to_string());
+        let username =
+            std::env::var("SMTP_USERNAME").unwrap_or_else(|_| "emailuser@mardens.com".to_string());
+        let password = std::env::var("SMTP_PASSWORD").unwrap_or_else(|_| "M@rdensM55".to_string());
 
         debug!("Creating SMTP credentials for user: {}", username);
-        let creds = Credentials::new(username.to_string(), password.to_string());
+        let creds = Credentials::new(username.clone(), password);
 
         debug!("Setting up SMTP transport with host: {}", smtp_host);
-        let transport = SmtpTransport::starttls_relay(smtp_host)?.credentials(creds).build();
+        let transport = SmtpTransport::starttls_relay(&smtp_host)?
+            .credentials(creds)
+            .build();
+
+        let from_email = std::env::var("SMTP_FROM").unwrap_or(username);
 
         info!(
             "EmailService initialized successfully with SMTP host: {}",
@@ -28,7 +35,7 @@ impl EmailService {
         );
         Ok(Self {
             transport,
-            from_email: username.to_string(),
+            from_email,
         })
     }
 
@@ -44,17 +51,16 @@ impl EmailService {
         );
 
         let base_url = if cfg!(debug_assertions) {
-            "http://127.0.0.1:1422"
+            let port = std::env::var("APP_PORT")
+                .map(|port_str| port_str.parse::<u16>().unwrap_or(1423))
+                .unwrap_or_else(|_| 1423);
+            format!("http://127.0.0.1:{}", port)
         } else {
-            "https://store-orders.mardens.com"
+            std::env::var("PUBLIC_BASE_URL")
+                .unwrap_or_else(|_| "https://store-orders.mardens.com".to_string())
         };
         debug!("Using base URL: {}", base_url);
-
         let reset_url = format!("{}/reset-password?token={}", base_url, reset_token);
-        debug!(
-            "Generated reset URL with token length: {}",
-            reset_token.len()
-        );
 
         let (subject, body) = if is_new_user {
             debug!("Preparing welcome email for new user");
@@ -370,11 +376,20 @@ impl EmailService {
 }
 
 mod tests {
-	use crate::auth::EmailService;
-	use log::LevelFilter;
+    use log::{warn, LevelFilter};
+    use crate::auth::EmailService;
+    use crate::DEBUG;
 
-	#[actix_web::test]
+    #[actix_web::test]
     async fn test_send_new_password_reset_email() {
+        if let Err(e) = dotenv::dotenv() {
+            if DEBUG {
+                warn!(
+                    "Could not load .env file: {}. Using system environment variables only.",
+                    e
+                );
+            }
+        }
         pretty_env_logger::env_logger::builder()
             .filter_level(LevelFilter::Trace)
             .format_timestamp(None)
@@ -388,6 +403,14 @@ mod tests {
     }
     #[actix_web::test]
     async fn test_send_password_reset_email() {
+        if let Err(e) = dotenv::dotenv() {
+            if DEBUG {
+                warn!(
+                    "Could not load .env file: {}. Using system environment variables only.",
+                    e
+                );
+            }
+        }
         pretty_env_logger::env_logger::builder()
             .filter_level(LevelFilter::Trace)
             .format_timestamp(None)

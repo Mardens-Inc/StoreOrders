@@ -8,8 +8,6 @@ const JWT_EXPIRATION_HOURS: i64 = 24;
 const REFRESH_TOKEN_EXPIRATION_DAYS: i64 = 30;
 
 fn access_secret() -> Result<Vec<u8>> {
-    // TODO: Fix this after the migration to the new servers.
-    return Ok(b"mardens-store-orders-dev".to_vec());
     if let Ok(secret) = std::env::var("JWT_ACCESS_SECRET") {
         if !secret.is_empty() {
             return Ok(secret.into_bytes());
@@ -22,6 +20,7 @@ fn access_secret() -> Result<Vec<u8>> {
     }
     if crate::DEBUG {
         // Development fallback to keep DX reasonable
+        log::warn!("Using development JWT secret - set JWT_ACCESS_SECRET in production!");
         return Ok(b"mardens-store-orders-dev".to_vec());
     }
     Err(anyhow::anyhow!(
@@ -30,8 +29,6 @@ fn access_secret() -> Result<Vec<u8>> {
 }
 
 fn refresh_secret() -> Result<Vec<u8>> {
-    // TODO: Fix this after the migration to the new servers.
-    return Ok(b"mardens-store-orders-refresh-dev".to_vec());
     if let Ok(secret) = std::env::var("JWT_REFRESH_SECRET") {
         if !secret.is_empty() {
             return Ok(secret.into_bytes());
@@ -43,6 +40,7 @@ fn refresh_secret() -> Result<Vec<u8>> {
         }
     }
     if crate::DEBUG {
+        log::warn!("Using development JWT refresh secret - set JWT_REFRESH_SECRET in production!");
         return Ok(b"mardens-store-orders-refresh-dev".to_vec());
     }
     Err(anyhow::anyhow!(

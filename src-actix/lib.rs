@@ -19,9 +19,17 @@ mod stores;
 mod upload;
 
 pub static DEBUG: bool = cfg!(debug_assertions);
-const PORT: u16 = 1422;
-
 pub async fn run() -> Result<()> {
+    // Load environment variables from .env file
+    if let Err(e) = dotenv::dotenv() {
+        if DEBUG {
+            warn!(
+                "Could not load .env file: {}. Using system environment variables only.",
+                e
+            );
+        }
+    }
+
     pretty_env_logger::env_logger::builder()
         .filter_level(if DEBUG {
             LevelFilter::Debug
@@ -67,6 +75,10 @@ pub async fn run() -> Result<()> {
         });
     }
 
+    let port = std::env::var("APP_PORT")
+        .map(|port_str| port_str.parse::<u16>().unwrap_or(1423))
+        .unwrap_or_else(|_| 1423);
+
     let server = HttpServer::new(move || {
         App::new()
             .wrap(middleware::Logger::default())
@@ -101,15 +113,14 @@ pub async fn run() -> Result<()> {
             .configure_frontend_routes()
     })
     .workers(4)
-    .bind(format!("0.0.0.0:{port}", port = PORT))?
+    .bind(format!("0.0.0.0:{port}", port = port))?
     .run();
 
     info!(
         "Starting {} server at http://127.0.0.1:{}...",
         if DEBUG { "development" } else { "production" },
-        PORT
+        port
     );
-
     let stop_result = server.await;
     debug!("Server stopped");
 
