@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from "react";
-import {Button, Card, CardBody, CardHeader, Chip, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, useDisclosure} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip, useDisclosure} from "@heroui/react";
 import {addToast} from "@heroui/toast";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
@@ -8,29 +8,10 @@ import CreateUserModal from "../modals/CreateUserModal";
 import EditUserModal from "../modals/EditUserModal";
 import DeleteUserModal from "../modals/DeleteUserModal";
 import ResetPasswordModal from "../modals/ResetPasswordModal";
+import DisableUserModalModal from "../modals/DisableUserModalModal.tsx";
+import {CreateUserRequest, Store, User} from "../../utils/types.ts";
+import {MessageResponseType, useMessage} from "../../providers/MessageProvider.tsx";
 
-interface User
-{
-    id: string;
-    email: string;
-    role: "store" | "admin";
-    store_id?: string;
-    created_at: string;
-}
-
-interface Store
-{
-    id: string;
-    city?: string;
-    address?: string;
-}
-
-interface CreateUserRequest
-{
-    email: string;
-    role: "store" | "admin";
-    store_id?: string;
-}
 
 const UserManagement: React.FC = () =>
 {
@@ -53,6 +34,8 @@ const UserManagement: React.FC = () =>
     const {isOpen: isEditOpen, onOpen: onEditOpen, onOpenChange: onEditOpenChange} = useDisclosure();
     const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
     const {isOpen: isResetPasswordOpen, onOpen: onResetPasswordOpen, onOpenChange: onResetPasswordOpenChange} = useDisclosure();
+    const [currentlyDisablingUser, setCurrentlyDisablingUser] = useState<User | null>(null);
+    const message = useMessage();
 
     // Load users and stores on component mount
     useEffect(() =>
@@ -72,7 +55,31 @@ const UserManagement: React.FC = () =>
 
             if (usersResponse.success)
             {
-                setUsers(usersResponse.data || []);
+                if (usersResponse.data)
+                {
+                    const users = usersResponse.data;
+                    for (const user of users)
+                    {
+                        user.is_disabled = null;
+                        try
+                        {
+                            const disabledUser = await authApi.getDisabledUser(user.id);
+                            user.is_disabled = disabledUser ?? null;
+                        } catch (e: any | Error)
+                        {
+                            if (e.message != "User not found")
+                            {
+                                console.error("Failed to fetch disabled user status for user: ", user.id, e);
+                            }
+                            user.is_disabled = null;
+                        }
+                    }
+                    console.log("Found users ", users);
+                    setUsers(users);
+                } else
+                {
+                    setUsers([]);
+                }
             }
 
             if (storesResponse.success)
@@ -332,35 +339,135 @@ const UserManagement: React.FC = () =>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="primary"
-                                                    isIconOnly
-                                                    onPress={() => openEditModal(user)}
-                                                >
-                                                    <Icon icon="lucide:edit" className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="warning"
-                                                    isIconOnly
-                                                    onPress={() => handleResetPasswordClick(user)}
-                                                    title="Reset Password"
-                                                >
-                                                    <Icon icon="lucide:key" className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="danger"
-                                                    isIconOnly
-                                                    onPress={() => openDeleteModal(user)}
-                                                    isDisabled={user.id === currentUser?.id} // Can't delete self
-                                                >
-                                                    <Icon icon="lucide:trash" className="w-4 h-4"/>
-                                                </Button>
+                                                <Tooltip content={"Edit User"} placement="top" className="flex items-center gap-1 pointer-events-none">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="primary"
+                                                        isIconOnly
+                                                        onPress={() => openEditModal(user)}
+                                                    >
+                                                        <Icon icon="lucide:edit" className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
+                                                <Tooltip content={"Reset Password"} placement="top" className="flex items-center gap-1 pointer-events-none">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="warning"
+                                                        isIconOnly
+                                                        onPress={() => handleResetPasswordClick(user)}
+                                                    >
+                                                        <Icon icon="lucide:key" className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
+
+                                                {user.is_disabled ?
+                                                    <Tooltip
+                                                        content={
+                                                            <div className={"flex flex-col items-start gap-1"}>
+                                                                <p className={"font-bold underline"}>User is Currently Disabled</p>
+                                                                <p>Expiration: <span>{user.is_disabled.expiration == null ? "No Expiration" :
+                                                                    (() =>
+                                                                    {
+                                                                        const now = new Date();
+                                                                        const expiration = new Date(user.is_disabled.expiration);
+                                                                        const diff = expiration.getTime() - now.getTime();
+
+                                                                        if (diff <= 0) return "Expired";
+
+                                                                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                                        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+                                                                        const parts = [];
+                                                                        if (days > 0) parts.push(`${days} day${days !== 1 ? "s" : ""}`);
+                                                                        if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? "s" : ""}`);
+                                                                        if (minutes > 0) parts.push(`${minutes} minute${minutes !== 1 ? "s" : ""}`);
+
+                                                                        return parts.length > 0 ? parts.join(", ") : "Less than 1 minute";
+                                                                    })()}
+                                                                    </span>
+                                                                </p>
+                                                                <p>Disabled By: <span className={"font-bold underline"}>{users.find(u => u.id == user.is_disabled?.disabled_by)?.email}</span></p>
+                                                                <p>Disabled On: <span className={"font-bold underline"}>{new Date(user.is_disabled.disabled_at).toLocaleDateString("en-us", {month: "long", day: "2-digit", year: "numeric", hour12: true, hour: "2-digit", minute: "2-digit", second: "2-digit"})}</span></p>
+                                                                <div className={"w-full"}>
+                                                                    Reason: <br/>
+                                                                    <div className={"flex flex-col p-2 bg-primary/10 rounded-md w-full max-h-24 overflow-auto"}>
+                                                                        {user.is_disabled.reason === "" ? <p>No reason provided.</p> :
+                                                                            <>{user.is_disabled.reason.split("\n").map(line => <p>{line}</p>)}</>}
+                                                                    </div>
+                                                                </div>
+
+                                                            </div>
+                                                        }
+                                                        placement="top"
+                                                        className="flex items-center gap-1"
+                                                    >
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="success"
+                                                            isIconOnly
+                                                            onPress={async () =>
+                                                            {
+                                                                const shouldEnable = await message.open({
+                                                                    title: "Enable User",
+                                                                    body: `Are you sure you want to enable user ${user.email}?`,
+                                                                    severity: "danger",
+                                                                    responseType: MessageResponseType.YesNo
+                                                                });
+                                                                if (shouldEnable)
+                                                                {
+                                                                    try
+                                                                    {
+                                                                        await authApi.enableUser(user.id);
+                                                                        await loadData();
+                                                                        addToast({
+                                                                            title: "User Enabled",
+                                                                            description: `User ${user.email} has been enabled successfully.`,
+                                                                            color: "success"
+                                                                        });
+                                                                    } catch (e)
+                                                                    {
+                                                                        console.error("Failed to enable user:", e);
+                                                                        addToast({
+                                                                            title: "Failed to Enable User",
+                                                                            description: "An error occurred while enabling the user.",
+                                                                            color: "danger"
+                                                                        });
+                                                                    }
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Icon icon="mingcute:user-follow-fill" className="w-4 h-4"/>
+                                                        </Button>
+                                                    </Tooltip>
+                                                    :
+                                                    <Tooltip content={"Disable User"} placement="top" className="flex items-center gap-1 pointer-events-none">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="warning"
+                                                            isIconOnly
+                                                            onPress={() => setCurrentlyDisablingUser(user)}
+                                                        >
+                                                            <Icon icon="mingcute:user-lock-fill" className="w-4 h-4"/>
+                                                        </Button>
+                                                    </Tooltip>
+                                                }
+                                                <Tooltip content={"Delete User"} placement="top" className="flex items-center gap-1 pointer-events-none">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="danger"
+                                                        isIconOnly
+                                                        onPress={() => openDeleteModal(user)}
+                                                        isDisabled={user.id === currentUser?.id} // Can't delete self
+                                                    >
+                                                        <Icon icon="lucide:trash" className="w-4 h-4"/>
+                                                    </Button>
+                                                </Tooltip>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -411,8 +518,15 @@ const UserManagement: React.FC = () =>
                 actionLoading={resetPasswordLoading}
                 selectedUser={userToReset}
             />
+
+            <DisableUserModalModal isOpen={currentlyDisablingUser !== null} onClose={() =>
+            {
+                setCurrentlyDisablingUser(null);
+                loadData();
+            }} user={currentlyDisablingUser!}/>
         </div>
     );
 };
+
 
 export default UserManagement;

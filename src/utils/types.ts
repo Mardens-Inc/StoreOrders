@@ -27,14 +27,16 @@ export interface StoreOrderRecordDto
     status_changed_to_completed?: string | null; // ISO timestamp
 }
 
-export enum StoreOrderStatus {
+export enum StoreOrderStatus
+{
     Pending = "Pending",
     Shipped = "Shipped",
     Delivered = "Delivered",
 }
 
 /** Order item (basic) */
-export interface OrderItemRecordDto {
+export interface OrderItemRecordDto
+{
     id: string;
     order_id: string;
     product_id: string;
@@ -45,19 +47,22 @@ export interface OrderItemRecordDto {
 }
 
 /** Order item with product fields (flattened) */
-export interface OrderItemWithProductDto extends OrderItemRecordDto {
+export interface OrderItemWithProductDto extends OrderItemRecordDto
+{
     product_name: string;
     product_sku: string;
     product_image_url?: string | null;
 }
 
 /** Combined order with its items (flattened order fields + items array) */
-export interface OrderWithItemsDto extends StoreOrderRecordDto {
+export interface OrderWithItemsDto extends StoreOrderRecordDto
+{
     items: OrderItemWithProductDto[];
 }
 
 /** Represents an option for a store, such as a pickup location or delivery option */
-export interface StoreOption {
+export interface StoreOption
+{
     /** Unique identifier for the option */
     id: string;
     /** Optional city name for the store option */
@@ -65,3 +70,39 @@ export interface StoreOption {
     /** Optional address for the store option */
     address?: string | null;
 }
+
+
+export type DisableUserRequest = {
+    "user_id": string,
+    "reason": string,
+    "expiration": Date | null
+}
+
+export type DisabledUser = {
+    "disabled_at": string,
+    "disabled_by": string,
+} & DisableUserRequest;
+
+export type User =
+    {
+        id: string;
+        email: string;
+        role: "store" | "admin";
+        store_id?: string;
+        created_at: string;
+        is_disabled?: DisabledUser | null;
+    }
+
+export type  Store =
+    {
+        id: string;
+        city?: string;
+        address?: string;
+    }
+
+export type CreateUserRequest =
+    {
+        email: string;
+        role: "store" | "admin";
+        store_id?: string;
+    }

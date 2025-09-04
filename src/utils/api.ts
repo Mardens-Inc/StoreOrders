@@ -1,8 +1,7 @@
 // API utility for making authenticated requests
 import {Category} from "../components/pages/Categories.tsx";
 import {Product} from "../providers/CartProvider.tsx";
-import {StoreOrderRecordDto} from "./types.ts";
-import {OrderWithItemsDto} from "./types.ts";
+import {DisabledUser, DisableUserRequest, OrderWithItemsDto, StoreOrderRecordDto, User} from "./types.ts";
 
 const API_BASE_URL = "/api";
 
@@ -33,9 +32,12 @@ class ApiClient
             if (response.status === 401)
             {
                 // Token expired or invalid. Notify app-level auth handler instead of hard redirecting.
-                try {
+                try
+                {
                     window.dispatchEvent(new CustomEvent("auth:unauthorized"));
-                } catch {}
+                } catch
+                {
+                }
                 throw new Error("Authentication required");
             }
 
@@ -43,7 +45,12 @@ class ApiClient
             throw new Error(errorData.error || `HTTP ${response.status}`);
         }
 
-        return response.json();
+        const text = await response.text();
+        if (!text)
+        {
+            return undefined as T;
+        }
+        return JSON.parse(text);
     }
 
     async get<T>(endpoint: string): Promise<T>
@@ -101,13 +108,17 @@ export const authApi = {
         apiClient.post("/auth/refresh", {refresh_token}),
 
     // User management endpoints (admin only)
-    getUsers: () => apiClient.get<ApiResponse>("/auth/users"),
+    getUsers: () => apiClient.get<ApiResponse<User[]>>("/auth/users"),
 
     updateUser: (userId: string, userData: any) =>
-        apiClient.put<ApiResponse>(`/auth/users/${userId}`, userData),
+        apiClient.put<ApiResponse<User>>(`/auth/users/${userId}`, userData),
 
     deleteUser: (userId: string) =>
-        apiClient.delete<ApiResponse>(`/auth/users/${userId}`)
+        apiClient.delete<ApiResponse>(`/auth/users/${userId}`),
+    getDisabledUsers: () => apiClient.get<ApiResponse<DisabledUser[]>>("/auth/admin/disabled-users"),
+    getDisabledUser: (userId: string) => apiClient.get<DisabledUser>(`/auth/admin/disabled-users/${userId}`),
+    disableUser: (request: DisableUserRequest) => apiClient.post(`/auth/admin/disable-user`, request),
+    enableUser: (userId: string) => apiClient.post(`/auth/admin/enable-user/${userId}`)
 };
 
 export const ordersApi = {
@@ -167,7 +178,8 @@ export const categoriesApi = {
 };
 
 export const storesApi = {
-    getStores: (filters?: Record<string, string>) => {
+    getStores: (filters?: Record<string, string>) =>
+    {
         const params = filters ? `?${new URLSearchParams(filters)}` : "";
         return apiClient.get<ApiResponse>(`/stores${params}`);
     },

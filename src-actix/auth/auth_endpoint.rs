@@ -81,6 +81,13 @@ pub async fn login(
         }
     };
 
+    if let Ok(Some(disabled_user)) = DisabledUser::get(user.id, &pool).await {
+        return Ok(HttpResponse::Unauthorized().json(json!({
+            "message": "User is disabled",
+            "data": disabled_user
+        })));
+    }
+
     let response = AuthResponse {
         user: UserResponse::from(user),
         token,

@@ -1,4 +1,5 @@
 import React, {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
+import {DisabledUser} from "../utils/types.ts";
 
 interface User
 {
@@ -19,9 +20,9 @@ interface AuthResponse
 interface AuthContextType
 {
     user: User | null;
-    login: (email: string, password: string) => Promise<boolean>;
+    login: (email: string, password: string) => Promise<boolean | DisabledUser>;
     logout: () => void;
-    isAuthenticated: boolean|undefined;
+    isAuthenticated: boolean | undefined;
     isLoading: boolean;
     token: string | null;
 }
@@ -50,7 +51,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const hasAttemptedFirstLogin = useRef(false)
+    const hasAttemptedFirstLogin = useRef(false);
 
     // Helper function to check if a JWT token is expired
     const isTokenExpired = (token: string): boolean =>
@@ -112,7 +113,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
     // Load user from localStorage on mount and subscribe to unauthorized events
     useEffect(() =>
     {
-        const onUnauthorized = () => {
+        const onUnauthorized = () =>
+        {
             logout();
         };
 
@@ -160,7 +162,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
 
         initAuth();
 
-        return () => {
+        return () =>
+        {
             window.removeEventListener("auth:unauthorized", onUnauthorized as EventListener);
         };
     }, []);
@@ -208,7 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
         }
     };
 
-    const login = async (email: string, password: string): Promise<boolean> =>
+    const login = async (email: string, password: string): Promise<boolean | DisabledUser> =>
     {
         try
         {
@@ -224,6 +227,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
             if (!response.ok)
             {
                 const errorData = await response.json();
+                if (errorData.message === "User is disabled")
+                {
+                    return errorData.data as DisabledUser;
+                }
                 console.error("Login failed:", errorData);
                 return false;
             }
@@ -241,7 +248,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) =>
             hasAttemptedFirstLogin.current = true;
 
             return true;
-        } catch (error)
+        } catch (error: any | Error)
         {
             console.error("Login error:", error);
             return false;

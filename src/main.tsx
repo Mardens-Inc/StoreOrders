@@ -12,6 +12,8 @@ import {ToastProvider} from "@heroui/toast";
 import {AuthProvider} from "./providers/AuthProvider";
 import {CartProvider} from "./providers/CartProvider";
 import {LayoutProvider} from "./providers/LayoutProvider";
+import {MessageProvider} from "./providers/MessageProvider.tsx";
+import ProtectedRoute from "./components/auth/ProtectedRoute.tsx";
 
 const rootElement = document.getElementById("root");
 if (!rootElement)
@@ -35,19 +37,21 @@ export function MainContentRenderer()
             <ToastProvider
                 placement={"bottom-right"}
             />
-            <AuthProvider>
-                <CartProvider>
-                    <LayoutProvider>
-                        <Routes>
-                            <Route path="/" element={<Login/>}/>
-                            <Route path="/login" element={<Login/>}/>
-                            <Route path="/forgot-password" element={<ForgotPassword/>}/>
-                            <Route path="/reset-password" element={<ResetPassword/>}/>
-                            <Route path="/app/*" element={<AppLayout/>}/>
-                        </Routes>
-                    </LayoutProvider>
-                </CartProvider>
-            </AuthProvider>
+            <MessageProvider>
+                <AuthProvider>
+                    <CartProvider>
+                        <LayoutProvider>
+                            <Routes>
+                                <Route path="/" element={<Login/>}/>
+                                <Route path="/login" element={<Login/>}/>
+                                <Route path="/forgot-password" element={<ForgotPassword/>}/>
+                                <Route path="/reset-password" element={<ResetPassword/>}/>
+                                <Route path="/app/*" element={<ProtectedRoute><AppLayout/></ProtectedRoute>}/>
+                            </Routes>
+                        </LayoutProvider>
+                    </CartProvider>
+                </AuthProvider>
+            </MessageProvider>
         </HeroUIProvider>
     );
 }

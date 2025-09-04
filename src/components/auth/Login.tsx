@@ -46,10 +46,15 @@ const Login: React.FC = () =>
 
         try
         {
-            const success = await login(email, password);
-            if (!success)
+            const response = await login(email, password);
+            if (Object.keys(response).length > 0)
             {
-                setError("Invalid credentials. Please check your email and password.");
+                setError(`Your account is disabled. Please contact your system administrator for more information.`);
+            } else
+            {
+                const success = response as boolean;
+                if (success) return <Navigate to="/app" replace/>;
+                else setError("Invalid credentials. Please check your email and password.");
             }
         } catch (err)
         {
@@ -86,7 +91,7 @@ const Login: React.FC = () =>
                             variant="bordered"
                             description="Use your @mardens.com email address"
                             classNames={{
-                                input: "text-sm",
+                                input: "text-sm !outline-none",
                                 label: "text-sm font-medium"
                             }}
                         />
@@ -100,7 +105,7 @@ const Login: React.FC = () =>
                             isRequired
                             variant="bordered"
                             classNames={{
-                                input: "text-sm",
+                                input: "text-sm !outline-none",
                                 label: "text-sm font-medium"
                             }}
                             endContent={
@@ -140,7 +145,8 @@ const Login: React.FC = () =>
                             variant="light"
                             size="sm"
                             className="text-blue-600 hover:text-blue-800"
-                            onPress={() => {
+                            onPress={() =>
+                            {
                                 // TODO: Implement forgot password functionality
                                 window.location.href = `/forgot-password?email=${encodeURIComponent(email)}`;
                             }}

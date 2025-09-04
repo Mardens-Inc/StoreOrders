@@ -76,8 +76,8 @@ pub async fn run() -> Result<()> {
     }
 
     let port = std::env::var("APP_PORT")
-        .map(|port_str| port_str.parse::<u16>().unwrap_or(1423))
-        .unwrap_or_else(|_| 1423);
+        .map(|port_str| port_str.parse::<u16>().unwrap_or(1422))
+        .unwrap_or_else(|_| 1422);
 
     let server = HttpServer::new(move || {
         App::new()
