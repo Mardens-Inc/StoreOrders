@@ -8,44 +8,22 @@ const JWT_EXPIRATION_HOURS: i64 = 24;
 const REFRESH_TOKEN_EXPIRATION_DAYS: i64 = 30;
 
 fn access_secret() -> Result<Vec<u8>> {
-    if let Ok(secret) = std::env::var("JWT_ACCESS_SECRET") {
-        if !secret.is_empty() {
-            return Ok(secret.into_bytes());
-        }
-    }
-    if let Ok(secret) = std::env::var("JWT_SECRET") {
-        if !secret.is_empty() {
-            return Ok(secret.into_bytes());
-        }
-    }
     if crate::DEBUG {
-        // Development fallback to keep DX reasonable
-        log::warn!("Using development JWT secret - set JWT_ACCESS_SECRET in production!");
+        // Development secret
+        log::warn!("Using development JWT secret");
         return Ok(b"mardens-store-orders-dev".to_vec());
     }
-    Err(anyhow::anyhow!(
-        "JWT_ACCESS_SECRET (or JWT_SECRET) is not set; refusing to operate in production"
-    ))
+    // Production secret (hardcoded from .env file)
+    Ok(b"c797163fdcd546109c76218bcf32759d".to_vec())
 }
 
 fn refresh_secret() -> Result<Vec<u8>> {
-    if let Ok(secret) = std::env::var("JWT_REFRESH_SECRET") {
-        if !secret.is_empty() {
-            return Ok(secret.into_bytes());
-        }
-    }
-    if let Ok(secret) = std::env::var("JWT_SECRET") {
-        if !secret.is_empty() {
-            return Ok(secret.into_bytes());
-        }
-    }
     if crate::DEBUG {
-        log::warn!("Using development JWT refresh secret - set JWT_REFRESH_SECRET in production!");
+        log::warn!("Using development JWT refresh secret");
         return Ok(b"mardens-store-orders-refresh-dev".to_vec());
     }
-    Err(anyhow::anyhow!(
-        "JWT_REFRESH_SECRET (or JWT_SECRET) is not set; refusing to operate in production"
-    ))
+    // Production refresh secret (hardcoded from .env file)
+    Ok(b"3378f21e507e487799bd22f268a3a806".to_vec())
 }
 
 #[derive(Debug, Serialize, Deserialize)]

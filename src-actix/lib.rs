@@ -20,16 +20,6 @@ mod upload;
 
 pub static DEBUG: bool = cfg!(debug_assertions);
 pub async fn run() -> Result<()> {
-    // Load environment variables from .env file
-    if let Err(e) = dotenv::dotenv() {
-        if DEBUG {
-            warn!(
-                "Could not load .env file: {}. Using system environment variables only.",
-                e
-            );
-        }
-    }
-
     pretty_env_logger::env_logger::builder()
         .filter_level(if DEBUG {
             LevelFilter::Debug
@@ -75,9 +65,7 @@ pub async fn run() -> Result<()> {
         });
     }
 
-    let port = std::env::var("APP_PORT")
-        .map(|port_str| port_str.parse::<u16>().unwrap_or(1422))
-        .unwrap_or_else(|_| 1422);
+    let port = 1422;
 
     let server = HttpServer::new(move || {
         App::new()
