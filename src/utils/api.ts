@@ -168,13 +168,13 @@ export const categoriesApi = {
     getCategory: (categoryId: string) => apiClient.get<ApiResponse<Category>>(`/categories/${categoryId}`),
 
     // Admin only
-    createCategory: (category: any) => apiClient.post<ApiResponse>("/categories", category),
+    createCategory: (category: any) => apiClient.post<ApiResponse>("/categories/admin", category),
 
     updateCategory: (categoryId: string, category: any) =>
-        apiClient.put<ApiResponse>(`/categories/${categoryId}`, category),
+        apiClient.put<ApiResponse>(`/categories/admin/${categoryId}`, category),
 
     deleteCategory: (categoryId: string) =>
-        apiClient.delete<ApiResponse>(`/categories/${categoryId}`)
+        apiClient.delete<ApiResponse>(`/categories/admin/${categoryId}`)
 };
 
 export const storesApi = {
