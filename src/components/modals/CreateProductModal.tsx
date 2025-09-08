@@ -1,9 +1,10 @@
 import React, {useCallback, useEffect, useState} from "react";
-import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Textarea, Tooltip} from "@heroui/react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Tooltip} from "@heroui/react";
 import ImageUpload from "../ImageUpload";
 import {Icon} from "@iconify-icon/react";
 import {categoriesApi} from "../../utils/api.ts";
 import {Input} from "../extension/Input.tsx";
+import {Textarea} from "../extension/Textarea.tsx";
 
 interface Category
 {

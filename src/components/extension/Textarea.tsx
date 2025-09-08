@@ -1,7 +1,7 @@
 import {forwardRef} from "react";
-import {cn, Input as Component, InputProps} from "@heroui/react";
+import {cn, Textarea as Component, TextAreaProps} from "@heroui/react";
 
-export const Input = forwardRef<HTMLInputElement, InputProps>((props, element) =>
+export const Textarea = forwardRef<HTMLTextAreaElement, TextAreaProps>((props, element) =>
 {
     return (
         <Component

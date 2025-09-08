@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from "react";
-import {Button, Card, CardBody, CardHeader, Chip, Image, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip, useDisclosure} from "@heroui/react";
+import React, {useEffect, useMemo, useState} from "react";
+import {Button, Card, CardBody, CardHeader, Chip, Image, Pagination, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Tooltip, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {categoriesApi, productsApi} from "../../utils/api";
@@ -11,6 +11,7 @@ import CreateCategoryModal from "../modals/CreateCategoryModal";
 import EditCategoryModal from "../modals/EditCategoryModal";
 import DeleteCategoryModal from "../modals/DeleteCategoryModal";
 import {Product} from "../../providers/CartProvider";
+import {Input} from "../extension/Input";
 
 interface Category
 {
@@ -74,6 +75,20 @@ const ProductManagement: React.FC = () =>
     const [actionLoading, setActionLoading] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
+    // Pagination and filtering state for products
+    const [productPage, setProductPage] = useState(1);
+    const [productSearchQuery, setProductSearchQuery] = useState("");
+    const [productCategoryFilter, setProductCategoryFilter] = useState("");
+    const [productStatusFilter, setProductStatusFilter] = useState("");
+    const itemsPerPage = 10;
+
+    // Pagination and filtering state for categories
+    const [categoryPage, setCategoryPage] = useState(1);
+    const [categorySearchQuery, setCategorySearchQuery] = useState("");
+
+    // Product form state
+    const [formData, setFormData] = useState<CreateProductRequest>(INITIAL_PRODUCT_FORM);
+
     // Category management state
     const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
     const [categoryFormData, setCategoryFormData] = useState<CreateCategoryRequest>({
@@ -81,8 +96,6 @@ const ProductManagement: React.FC = () =>
         description: "",
         icon: ""
     });
-
-    const [formData, setFormData] = useState<CreateProductRequest>(INITIAL_PRODUCT_FORM);
 
     // Image upload state
     const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -106,8 +119,10 @@ const ProductManagement: React.FC = () =>
     }, []);
 
     // Reset form when create modal opens (fresh form each time)
-    useEffect(() => {
-        if (isCreateOpen) {
+    useEffect(() =>
+    {
+        if (isCreateOpen)
+        {
             setSelectedProduct(null);
             setPendingNewProductImage(null);
             setFormData(INITIAL_PRODUCT_FORM);
@@ -115,8 +130,10 @@ const ProductManagement: React.FC = () =>
     }, [isCreateOpen]);
 
     // When edit modal closes, clear form so it doesn't leak into create modal
-    useEffect(() => {
-        if (!isEditOpen) {
+    useEffect(() =>
+    {
+        if (!isEditOpen)
+        {
             setSelectedProduct(null);
             setPendingNewProductImage(null);
             setFormData(INITIAL_PRODUCT_FORM);
@@ -304,10 +321,12 @@ const ProductManagement: React.FC = () =>
 
         if (croppedFile)
         {
-            if (selectedProduct) {
+            if (selectedProduct)
+            {
                 // Editing existing product: upload immediately
                 await uploadProductImage(selectedProduct.id, croppedFile, false);
-            } else {
+            } else
+            {
                 // Creating new product: store locally until product is created
                 setPendingNewProductImage(croppedFile);
                 const previewUrl = URL.createObjectURL(croppedFile);
@@ -319,8 +338,10 @@ const ProductManagement: React.FC = () =>
     };
 
     // Helper to upload product image given a hashed product id
-    const uploadProductImage = async (productId: string, file: File, silent: boolean) => {
-        try {
+    const uploadProductImage = async (productId: string, file: File, silent: boolean) =>
+    {
+        try
+        {
             if (!silent) setUploadingImage(true);
             const fileBuffer = await file.arrayBuffer();
             const response = await fetch(`/api/upload/product-image/${productId}`, {
@@ -332,21 +353,26 @@ const ProductManagement: React.FC = () =>
                 body: fileBuffer
             });
             const result = await response.json().catch(() => ({}));
-            if (response.ok && result.success) {
+            if (response.ok && result.success)
+            {
                 // Update form data image_url if editing
                 setFormData(prev => ({...prev, image_url: result.url}));
                 // If editing existing product, refresh list for immediate UI update
-                if (selectedProduct) {
+                if (selectedProduct)
+                {
                     await loadData();
                 }
-            } else {
+            } else
+            {
                 console.error("Failed to upload image:", result.error || "Unknown error");
                 if (!silent) alert("Failed to upload image: " + (result.error || "Unknown error"));
             }
-        } catch (e) {
+        } catch (e)
+        {
             console.error("Error uploading image", e);
             if (!silent) alert("Error uploading image. Please try again.");
-        } finally {
+        } finally
+        {
             if (!silent) setUploadingImage(false);
         }
     };
@@ -449,6 +475,98 @@ const ProductManagement: React.FC = () =>
         onDeleteCategoryOpen();
     };
 
+    // Fuzzy search function
+    const fuzzySearch = (query: string, text: string): boolean =>
+    {
+        if (!query) return true;
+        const queryLower = query.toLowerCase();
+        const textLower = text.toLowerCase();
+
+        // Simple fuzzy search: check if all characters in query appear in order in text
+        let queryIndex = 0;
+        for (let i = 0; i < textLower.length && queryIndex < queryLower.length; i++)
+        {
+            if (textLower[i] === queryLower[queryIndex])
+            {
+                queryIndex++;
+            }
+        }
+        return queryIndex === queryLower.length;
+    };
+
+    // Filtered and paginated products
+    const filteredProducts = useMemo(() =>
+    {
+        return products.filter(product =>
+        {
+            // General search filter (fuzzy search on name and SKU)
+            if (productSearchQuery)
+            {
+                const matchesName = fuzzySearch(productSearchQuery, product.name);
+                const matchesSku = fuzzySearch(productSearchQuery, product.sku);
+                if (!matchesName && !matchesSku) return false;
+            }
+
+            // Category filter
+            if (productCategoryFilter && product.category_id !== productCategoryFilter)
+            {
+                return false;
+            }
+
+            // Status filter
+            if (productStatusFilter)
+            {
+                const isActive = product.is_active ?? false;
+                if (productStatusFilter === "active" && !isActive) return false;
+                if (productStatusFilter === "inactive" && isActive) return false;
+            }
+
+            return true;
+        });
+    }, [products, productSearchQuery, productCategoryFilter, productStatusFilter]);
+
+    const paginatedProducts = useMemo(() =>
+    {
+        const startIndex = (productPage - 1) * itemsPerPage;
+        return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredProducts, productPage]);
+
+    const productTotalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+
+    // Filtered and paginated categories
+    const filteredCategories = useMemo(() =>
+    {
+        return categories.filter(category =>
+        {
+            if (categorySearchQuery)
+            {
+                const matchesName = fuzzySearch(categorySearchQuery, category.name);
+                const matchesDescription = category.description ? fuzzySearch(categorySearchQuery, category.description) : false;
+                return matchesName || matchesDescription;
+            }
+            return true;
+        });
+    }, [categories, categorySearchQuery]);
+
+    const paginatedCategories = useMemo(() =>
+    {
+        const startIndex = (categoryPage - 1) * itemsPerPage;
+        return filteredCategories.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredCategories, categoryPage]);
+
+    const categoryTotalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+
+    // Reset pagination when filters change
+    useEffect(() =>
+    {
+        setProductPage(1);
+    }, [productSearchQuery, productCategoryFilter, productStatusFilter]);
+
+    useEffect(() =>
+    {
+        setCategoryPage(1);
+    }, [categorySearchQuery]);
+
     // Check if current user is admin
     if (currentUser?.role !== "admin")
     {
@@ -503,7 +621,43 @@ const ProductManagement: React.FC = () =>
 
             <Card>
                 <CardHeader>
-                    <h2 className="text-lg font-semibold">Products</h2>
+                    <div className="flex flex-col gap-4 w-full">
+                        <h2 className="text-lg font-semibold">Products</h2>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Input
+                                placeholder="Search products..."
+                                value={productSearchQuery}
+                                onValueChange={setProductSearchQuery}
+                                startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
+                            />
+                            <Select
+                                placeholder="Filter by category"
+                                value={productCategoryFilter}
+                                onSelectionChange={(keys) => setProductCategoryFilter(Array.from(keys)[0] as string || "")}
+                                className="min-w-48 w-48"
+                            >
+
+                                {[(<SelectItem key="" textValue="">All Categories</SelectItem>), ...categories.map((category) => (
+                                    <SelectItem key={category.id} textValue={category.id}>
+                                        {category.name}
+                                    </SelectItem>
+                                ))]}
+                            </Select>
+                            <Select
+                                placeholder="Filter by status"
+                                value={productStatusFilter}
+                                onSelectionChange={(keys) => setProductStatusFilter(Array.from(keys)[0] as string || "")}
+                                className="min-w-32 w-48"
+                            >
+                                <SelectItem key="" textValue="">All Status</SelectItem>
+                                <SelectItem key="active" textValue="active">Active</SelectItem>
+                                <SelectItem key="inactive" textValue="inactive">Inactive</SelectItem>
+                            </Select>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            Showing {paginatedProducts.length} of {filteredProducts.length} products
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardBody>
                     {loading ? (
@@ -511,88 +665,102 @@ const ProductManagement: React.FC = () =>
                             <Spinner size="lg"/>
                         </div>
                     ) : (
-                        <Table aria-label="Products table" removeWrapper>
-                            <TableHeader>
-                                <TableColumn width={64}>IMAGE</TableColumn>
-                                <TableColumn>NAME</TableColumn>
-                                <TableColumn>SKU</TableColumn>
-                                <TableColumn>CATEGORY</TableColumn>
-                                <TableColumn>PRICE</TableColumn>
-                                <TableColumn>STATUS</TableColumn>
-                                <TableColumn width={64} hideHeader>ACTIONS</TableColumn>
-                            </TableHeader>
-                            <TableBody>
-                                {products.map((product) => (
-                                    <TableRow key={product.id}>
-                                        <TableCell>
-                                            <div className="w-[5rem] h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                                                {product.image_url ? (
-                                                    <Image
-                                                        src={`${product.image_url}?v=${Date.now()}`}
-                                                        alt={product.name}
-                                                        className="w-full h-full object-cover"
-                                                        radius={"md"}
-                                                    />
-                                                ) : (
-                                                    <Icon icon="lucide:image" className="w-6 h-6 text-gray-400"/>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="font-medium">{product.name}</p>
-                                                <p className="text-sm text-gray-500 truncate max-w-48">{product.description}</p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{product.sku}</TableCell>
-                                        <TableCell>{getCategoryName(product.category_id)}</TableCell>
-                                        <TableCell>${product.price?.toFixed(2)}</TableCell>
-                                        <TableCell>
-                                            <Chip color={getActiveStatusColor(product.is_active ?? false)} variant="flat" size="sm">
-                                                {product.is_active ? "Active" : "Inactive"}
-                                            </Chip>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
-                                                <Tooltip content={"Edit Product"}>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color="primary"
-                                                        isIconOnly
-                                                        onPress={() => openEditModal(product)}
-                                                    >
-                                                        <Icon icon="lucide:edit" className="w-4 h-4"/>
-                                                    </Button>
-                                                </Tooltip>
-                                                <Tooltip content={product.is_active ? "Deactivate Product" : "Activate Product"}>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color={product.is_active ? "warning" : "success"}
-                                                        isIconOnly
-                                                        onPress={() => handleToggleActive(product)}
-                                                    >
-                                                        <Icon icon={product.is_active ? "lucide:eye-off" : "lucide:eye"} className="w-4 h-4"/>
-                                                    </Button>
-                                                </Tooltip>
-                                                <Tooltip content={"Delete Product"}>
-                                                    <Button
-                                                        size="sm"
-                                                        variant="flat"
-                                                        color="danger"
-                                                        isIconOnly
-                                                        onPress={() => openDeleteModal(product)}
-                                                    >
-                                                        <Icon icon="lucide:trash" className="w-4 h-4"/>
-                                                    </Button>
-                                                </Tooltip>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <>
+                            <Table aria-label="Products table" removeWrapper>
+                                <TableHeader>
+                                    <TableColumn width={64}>IMAGE</TableColumn>
+                                    <TableColumn>NAME</TableColumn>
+                                    <TableColumn>SKU</TableColumn>
+                                    <TableColumn>CATEGORY</TableColumn>
+                                    <TableColumn>PRICE</TableColumn>
+                                    <TableColumn>STATUS</TableColumn>
+                                    <TableColumn width={64} hideHeader>ACTIONS</TableColumn>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedProducts.map((product) => (
+                                        <TableRow key={product.id}>
+                                            <TableCell>
+                                                <div className="w-[5rem] h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                                    {product.image_url ? (
+                                                        <Image
+                                                            src={`${product.image_url}?v=${Date.now()}`}
+                                                            alt={product.name}
+                                                            className="w-full h-full object-cover"
+                                                            radius={"md"}
+                                                        />
+                                                    ) : (
+                                                        <Icon icon="lucide:image" className="w-6 h-6 text-gray-400"/>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <p className="font-medium">{product.name}</p>
+                                                    <p className="text-sm text-gray-500 truncate max-w-48">{product.description}</p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{product.sku}</TableCell>
+                                            <TableCell>{getCategoryName(product.category_id)}</TableCell>
+                                            <TableCell>${product.price?.toFixed(2)}</TableCell>
+                                            <TableCell>
+                                                <Chip color={getActiveStatusColor(product.is_active ?? false)} variant="flat" size="sm">
+                                                    {product.is_active ? "Active" : "Inactive"}
+                                                </Chip>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex gap-2">
+                                                    <Tooltip content={"Edit Product"}>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="primary"
+                                                            isIconOnly
+                                                            onPress={() => openEditModal(product)}
+                                                        >
+                                                            <Icon icon="lucide:edit" className="w-4 h-4"/>
+                                                        </Button>
+                                                    </Tooltip>
+                                                    <Tooltip content={product.is_active ? "Deactivate Product" : "Activate Product"}>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color={product.is_active ? "warning" : "success"}
+                                                            isIconOnly
+                                                            onPress={() => handleToggleActive(product)}
+                                                        >
+                                                            <Icon icon={product.is_active ? "lucide:eye-off" : "lucide:eye"} className="w-4 h-4"/>
+                                                        </Button>
+                                                    </Tooltip>
+                                                    <Tooltip content={"Delete Product"}>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="flat"
+                                                            color="danger"
+                                                            isIconOnly
+                                                            onPress={() => openDeleteModal(product)}
+                                                        >
+                                                            <Icon icon="lucide:trash" className="w-4 h-4"/>
+                                                        </Button>
+                                                    </Tooltip>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            {productTotalPages > 1 && (
+                                <div className="flex justify-center mt-4">
+                                    <Pagination
+                                        loop
+                                        isCompact
+                                        showControls
+                                        page={productPage}
+                                        total={productTotalPages}
+                                        onChange={setProductPage}
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
                 </CardBody>
             </Card>
@@ -645,15 +813,29 @@ const ProductManagement: React.FC = () =>
             {/* Category Management Section */}
             <Card>
                 <CardHeader>
-                    <div className="flex justify-between items-center w-full">
-                        <h2 className="text-lg font-semibold">Categories</h2>
-                        <Button
-                            color="primary"
-                            onPress={onCreateCategoryOpen}
-                            startContent={<Icon icon="lucide:plus" className="w-4 h-4"/>}
-                        >
-                            Add Category
-                        </Button>
+                    <div className="flex flex-col gap-4 w-full">
+                        <div className="flex justify-between items-center w-full">
+                            <h2 className="text-lg font-semibold">Categories</h2>
+                            <Button
+                                color="primary"
+                                onPress={onCreateCategoryOpen}
+                                startContent={<Icon icon="lucide:plus" className="w-4 h-4"/>}
+                            >
+                                Add Category
+                            </Button>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <Input
+                                placeholder="Search categories..."
+                                value={categorySearchQuery}
+                                onValueChange={setCategorySearchQuery}
+                                startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
+                                className="flex-1"
+                            />
+                        </div>
+                        <div className="text-sm text-gray-500">
+                            Showing {paginatedCategories.length} of {filteredCategories.length} categories
+                        </div>
                     </div>
                 </CardHeader>
                 <CardBody>
@@ -662,56 +844,70 @@ const ProductManagement: React.FC = () =>
                             <Spinner size="lg"/>
                         </div>
                     ) : (
-                        <Table aria-label="Categories table" removeWrapper>
-                            <TableHeader>
-                                <TableColumn width={64} maxWidth={64} hideHeader>ICON</TableColumn>
-                                <TableColumn>NAME</TableColumn>
-                                <TableColumn width={64} maxWidth={64} hideHeader>ACTIONS</TableColumn>
-                            </TableHeader>
-                            <TableBody>
-                                {categories.map((category) => (
-                                    <TableRow key={category.id}>
-                                        <TableCell>
-                                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                                                {category.icon ? (
-                                                    <Icon icon={category.icon} className="w-5 h-5 text-gray-600"/>
-                                                ) : (
-                                                    <Icon icon="lucide:folder" className="w-5 h-5 text-gray-400"/>
-                                                )}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div>
-                                                <p className="font-medium">{category.name}</p>
-                                                <p className="text-sm text-gray-500 truncate max-w-48">{category.description}</p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="primary"
-                                                    isIconOnly
-                                                    onPress={() => openEditCategoryModal(category)}
-                                                >
-                                                    <Icon icon="lucide:edit" className="w-4 h-4"/>
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="flat"
-                                                    color="danger"
-                                                    isIconOnly
-                                                    onPress={() => openDeleteCategoryModal(category)}
-                                                >
-                                                    <Icon icon="lucide:trash" className="w-4 h-4"/>
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
+                        <>
+                            <Table aria-label="Categories table" removeWrapper>
+                                <TableHeader>
+                                    <TableColumn width={64} maxWidth={64} hideHeader>ICON</TableColumn>
+                                    <TableColumn>NAME</TableColumn>
+                                    <TableColumn width={64} maxWidth={64} hideHeader>ACTIONS</TableColumn>
+                                </TableHeader>
+                                <TableBody>
+                                    {paginatedCategories.map((category) => (
+                                        <TableRow key={category.id}>
+                                            <TableCell>
+                                                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                    {category.icon ? (
+                                                        <Icon icon={category.icon} className="w-5 h-5 text-gray-600"/>
+                                                    ) : (
+                                                        <Icon icon="lucide:folder" className="w-5 h-5 text-gray-400"/>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div>
+                                                    <p className="font-medium">{category.name}</p>
+                                                    <p className="text-sm text-gray-500 truncate max-w-48">{category.description}</p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="primary"
+                                                        isIconOnly
+                                                        onPress={() => openEditCategoryModal(category)}
+                                                    >
+                                                        <Icon icon="lucide:edit" className="w-4 h-4"/>
+                                                    </Button>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="flat"
+                                                        color="danger"
+                                                        isIconOnly
+                                                        onPress={() => openDeleteCategoryModal(category)}
+                                                    >
+                                                        <Icon icon="lucide:trash" className="w-4 h-4"/>
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                            {categoryTotalPages > 1 && (
+                                <div className="flex justify-center mt-4">
+                                    <Pagination
+                                        loop
+                                        isCompact
+                                        showControls
+                                        page={categoryPage}
+                                        total={categoryTotalPages}
+                                        onChange={setCategoryPage}
+                                    />
+                                </div>
+                            )}
+                        </>
                     )}
                 </CardBody>
             </Card>

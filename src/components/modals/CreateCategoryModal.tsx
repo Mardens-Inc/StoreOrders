@@ -1,7 +1,8 @@
 import React from "react";
 import {Icon} from "@iconify-icon/react";
 import {Input} from "../extension/Input.tsx";
-import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea} from "@heroui/react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem} from "@heroui/react";
+import {Textarea} from "../extension/Textarea.tsx";
 
 interface CreateCategoryRequest
 {

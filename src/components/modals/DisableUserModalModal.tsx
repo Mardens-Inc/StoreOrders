@@ -1,9 +1,10 @@
-import {Button, ButtonGroup, Calendar, cn, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch, Textarea} from "@heroui/react";
+import {Button, ButtonGroup, Calendar, cn, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Switch} from "@heroui/react";
 import {useCallback, useRef, useState} from "react";
 import {getLocalTimeZone, today} from "@internationalized/date";
 import {motion} from "framer-motion";
 import {DisableUserRequest, User} from "../../utils/types.ts";
 import {authApi} from "../../utils/api.ts";
+import {Textarea} from "../extension/Textarea.tsx";
 import {addToast} from "@heroui/toast";
 
 type DisableUserModalProperties = {
