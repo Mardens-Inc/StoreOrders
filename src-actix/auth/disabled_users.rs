@@ -24,7 +24,7 @@ pub async fn initialize(pool: &MySqlPool) -> Result<()> {
     pool.execute(
         r#"CREATE TABLE IF NOT EXISTS `disabled_users`
 (
-    id          INT UNSIGNED NOT NULL PRIMARY KEY,
+    user_id     INT UNSIGNED NOT NULL PRIMARY KEY,
     disabled_at DATETIME     NOT NULL,
     disabled_by INT UNSIGNED NOT NULL,
     reason      TEXT,
