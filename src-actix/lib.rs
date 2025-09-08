@@ -4,6 +4,7 @@ use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 use anyhow::Result;
 use database_common_lib::database_connection::{set_database_name, DatabaseConnectionData};
 use log::*;
+use pretty_env_logger::env_logger::TimestampPrecision;
 use serde_json::json;
 use std::fs;
 use std::path::PathBuf;
@@ -21,12 +22,12 @@ mod upload;
 pub static DEBUG: bool = cfg!(debug_assertions);
 pub async fn run() -> Result<()> {
     pretty_env_logger::env_logger::builder()
-        .filter_level(if DEBUG {
-            LevelFilter::Debug
+        .filter_level(LevelFilter::Debug)
+        .format_timestamp(if DEBUG {
+            None
         } else {
-            LevelFilter::Info
+            Some(TimestampPrecision::Seconds)
         })
-        .format_timestamp(None)
         .init();
     set_database_name("stores")?;
     let connection_data = DatabaseConnectionData::get().await?;
