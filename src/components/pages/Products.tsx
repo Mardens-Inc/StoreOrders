@@ -1,11 +1,12 @@
 import React, {useEffect, useMemo, useState} from "react";
 import {useParams} from "react-router-dom";
-import {Button, ButtonGroup, Card, CardBody, Input, Select, SelectItem, Spinner} from "@heroui/react";
+import {Button, ButtonGroup, Card, CardBody, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
 import {categoriesApi, productsApi} from "../../utils/api";
 import {Category} from "./Categories.tsx";
 import {ProductItem} from "../product/ProductItem.tsx";
+import {Input} from "../extension/Input.tsx";
 
 const Products: React.FC = () =>
 {

@@ -1,8 +1,9 @@
 import React, {useEffect, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Card, CardBody, CardHeader, Chip, cn, Input, Spinner} from "@heroui/react";
+import {Card, CardBody, CardHeader, Chip, cn, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {apiClient, categoriesApi} from "../../utils/api";
+import {Input} from "../extension/Input.tsx";
 
 export interface Category
 {

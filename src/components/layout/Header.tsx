@@ -1,9 +1,10 @@
 import React from "react";
-import {Avatar, Badge, Button, Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Input, Navbar, NavbarContent, NavbarItem} from "@heroui/react";
+import {Avatar, Badge, Button, Chip, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Navbar, NavbarContent, NavbarItem} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {useCart} from "../../providers/CartProvider";
 import {useLayout} from "../../providers/LayoutProvider";
+import {Input} from "../extension/Input.tsx";
 
 const Header: React.FC = () =>
 {

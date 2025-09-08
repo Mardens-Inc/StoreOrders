@@ -1,5 +1,6 @@
 import React from "react";
-import {Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem} from "@heroui/react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem} from "@heroui/react";
+import {Input} from "../extension/Input.tsx";
 
 interface Store
 {

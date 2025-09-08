@@ -1,10 +1,11 @@
 import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Chip, Divider, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Divider, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useCart} from "../../providers/CartProvider";
 import {useAuth} from "../../providers/AuthProvider";
 import {ordersApi} from "../../utils/api";
+import {Input} from "../extension/Input.tsx";
 
 const Cart: React.FC = () =>
 {

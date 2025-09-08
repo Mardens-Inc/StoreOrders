@@ -1,52 +1,62 @@
 import React, {useState} from "react";
-import {Button, Card, CardBody, CardHeader, Divider, Form, Input, Link} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Divider, Form, Link} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useSearchParams} from "react-router-dom";
+import {Input} from "../extension/Input.tsx";
 
-const ForgotPassword: React.FC = () => {
+const ForgotPassword: React.FC = () =>
+{
     const [searchParams] = useSearchParams();
-    const [email, setEmail] = useState(searchParams.get('email') || "");
+    const [email, setEmail] = useState(searchParams.get("email") || "");
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState("");
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) =>
+    {
         e.preventDefault();
         setIsLoading(true);
         setError("");
 
         // Validate email domain
-        if (!email.endsWith("@mardens.com")) {
+        if (!email.endsWith("@mardens.com"))
+        {
             setError("Please use your @mardens.com email address.");
             setIsLoading(false);
             return;
         }
 
-        try {
+        try
+        {
             const response = await fetch("/api/auth/forgot-password", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ email }),
+                body: JSON.stringify({email})
             });
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
+            if (response.ok && data.success)
+            {
                 setSuccess(true);
-            } else {
+            } else
+            {
                 setError(data.error || "An error occurred. Please try again.");
             }
-        } catch (err) {
+        } catch (err)
+        {
             console.error("Forgot password error:", err);
             setError("An error occurred. Please try again.");
-        } finally {
+        } finally
+        {
             setIsLoading(false);
         }
     };
 
-    if (success) {
+    if (success)
+    {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
                 <Card className="w-full max-w-md">
@@ -62,7 +72,7 @@ const ForgotPassword: React.FC = () => {
                     <CardBody className="pt-6">
                         <div className="text-center space-y-4">
                             <p className="text-gray-600">
-                                If the email address is associated with an account in our system, 
+                                If the email address is associated with an account in our system,
                                 you will receive a password reset link shortly.
                             </p>
                             <p className="text-sm text-gray-500">

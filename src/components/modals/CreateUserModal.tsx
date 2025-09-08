@@ -1,19 +1,23 @@
 import React from "react";
-import {Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem} from "@heroui/react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem} from "@heroui/react";
+import {Input} from "../extension/Input.tsx";
 
-interface Store {
+interface Store
+{
     id: string;
     city?: string;
     address?: string;
 }
 
-interface CreateUserRequest {
+interface CreateUserRequest
+{
     email: string;
     role: "store" | "admin";
     store_id?: string;
 }
 
-interface CreateUserModalProps {
+interface CreateUserModalProps
+{
     isOpen: boolean;
     onOpenChange: () => void;
     formData: CreateUserRequest;
@@ -24,15 +28,17 @@ interface CreateUserModalProps {
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({
-    isOpen,
-    onOpenChange,
-    formData,
-    setFormData,
-    stores,
-    onCreateUser,
-    actionLoading
-}) => {
-    const getStoreName = (storeId?: string) => {
+                                                             isOpen,
+                                                             onOpenChange,
+                                                             formData,
+                                                             setFormData,
+                                                             stores,
+                                                             onCreateUser,
+                                                             actionLoading
+                                                         }) =>
+{
+    const getStoreName = (storeId?: string) =>
+    {
         if (!storeId) return "N/A";
         const store = stores.find(s => s.id === storeId);
         return store ? `${store.city || "Unknown"} - ${store.address || "No address"}` : "Unknown Store";
@@ -61,7 +67,8 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                             <Select
                                 label="Role"
                                 selectedKeys={[formData.role]}
-                                onSelectionChange={(keys) => {
+                                onSelectionChange={(keys) =>
+                                {
                                     const role = Array.from(keys)[0] as "store" | "admin";
                                     setFormData({...formData, role});
                                 }}
@@ -73,7 +80,8 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({
                                 <Select
                                     label="Store"
                                     selectedKeys={formData.store_id ? [formData.store_id] : []}
-                                    onSelectionChange={(keys) => {
+                                    onSelectionChange={(keys) =>
+                                    {
                                         const storeId = Array.from(keys)[0] as string;
                                         setFormData({...formData, store_id: storeId});
                                     }}

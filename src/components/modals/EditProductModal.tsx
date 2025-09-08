@@ -1,6 +1,7 @@
 import React from "react";
-import {Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Textarea} from "@heroui/react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Spinner, Textarea} from "@heroui/react";
 import ImageUpload from "../ImageUpload";
+import {Input} from "../extension/Input.tsx";
 
 interface Category
 {

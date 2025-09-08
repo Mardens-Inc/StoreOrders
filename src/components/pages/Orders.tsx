@@ -1,11 +1,12 @@
 import React, {useEffect, useMemo, useState} from "react";
 import {useNavigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Chip, Input, Select, SelectItem, Spinner} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Chip, Select, SelectItem, Spinner} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {ApiResponse, ordersApi, storesApi} from "../../utils/api";
 import {useAuth} from "../../providers/AuthProvider";
 import {ErrorBoundary} from "../ErrorBoundary.tsx";
-import {StoreOrderRecordDto, OrderWithItemsDto, OrderItemWithProductDto, StoreOption} from "../../utils/types";
+import {OrderItemWithProductDto, OrderWithItemsDto, StoreOption, StoreOrderRecordDto} from "../../utils/types";
+import {Input} from "../extension/Input.tsx";
 
 // Backend shapes removed in favor of shared DTOs
 

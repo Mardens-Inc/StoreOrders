@@ -1,14 +1,17 @@
-import React from 'react';
-import { Button, Input, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea } from '@heroui/react';
-import { Icon } from '@iconify-icon/react';
+import React from "react";
+import {Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Select, SelectItem, Textarea} from "@heroui/react";
+import {Icon} from "@iconify-icon/react";
+import {Input} from "../extension/Input.tsx";
 
-interface CreateCategoryRequest {
+interface CreateCategoryRequest
+{
     name: string;
     description?: string;
     icon?: string;
 }
 
-interface EditCategoryModalProps {
+interface EditCategoryModalProps
+{
     isOpen: boolean;
     onOpenChange: () => void;
     categoryFormData: CreateCategoryRequest;
@@ -19,14 +22,15 @@ interface EditCategoryModalProps {
 }
 
 const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
-    isOpen,
-    onOpenChange,
-    categoryFormData,
-    setCategoryFormData,
-    onUpdateCategory,
-    actionLoading,
-    availableIcons
-}) => {
+                                                                 isOpen,
+                                                                 onOpenChange,
+                                                                 categoryFormData,
+                                                                 setCategoryFormData,
+                                                                 onUpdateCategory,
+                                                                 actionLoading,
+                                                                 availableIcons
+                                                             }) =>
+{
     return (
         <Modal
             isOpen={isOpen}
@@ -57,12 +61,15 @@ const EditCategoryModal: React.FC<EditCategoryModalProps> = ({
                                 label="Icon"
                                 placeholder="Select an icon"
                                 selectedKeys={categoryFormData.icon ? [categoryFormData.icon] : []}
-                                onSelectionChange={(keys) => {
+                                onSelectionChange={(keys) =>
+                                {
                                     const iconValue = Array.from(keys)[0] as string;
                                     setCategoryFormData({...categoryFormData, icon: iconValue});
                                 }}
-                                renderValue={(items) => {
-                                    return items.map((item) => {
+                                renderValue={(items) =>
+                                {
+                                    return items.map((item) =>
+                                    {
                                         const iconData = availableIcons.find(icon => icon.value === item.key);
                                         return (
                                             <div key={item.key} className="flex items-center gap-2">

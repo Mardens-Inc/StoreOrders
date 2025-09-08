@@ -1,8 +1,9 @@
 import React, {useState} from "react";
 import {Navigate} from "react-router-dom";
-import {Button, Card, CardBody, CardHeader, Divider, Form, Input, Tooltip} from "@heroui/react";
+import {Button, Card, CardBody, CardHeader, Divider, Form, Tooltip} from "@heroui/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {Icon} from "@iconify-icon/react";
+import {Input} from "../extension/Input.tsx";
 
 const Login: React.FC = () =>
 {

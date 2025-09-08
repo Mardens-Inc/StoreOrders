@@ -1,12 +1,14 @@
-import React, {useState, useEffect} from "react";
-import {Button, Card, CardBody, CardHeader, Divider, Form, Input, Link, Tooltip} from "@heroui/react";
+import React, {useEffect, useState} from "react";
+import {Button, Card, CardBody, CardHeader, Divider, Form, Link, Tooltip} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
-import {useSearchParams, useNavigate} from "react-router-dom";
+import {useNavigate, useSearchParams} from "react-router-dom";
+import {Input} from "../extension/Input.tsx";
 
-const ResetPassword: React.FC = () => {
+const ResetPassword: React.FC = () =>
+{
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [token] = useState(searchParams.get('token') || "");
+    const [token] = useState(searchParams.get("token") || "");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -15,36 +17,45 @@ const ResetPassword: React.FC = () => {
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        if (!token) {
+    useEffect(() =>
+    {
+        if (!token)
+        {
             setError("Invalid or missing reset token.");
         }
     }, [token]);
 
-    const validatePassword = (password: string): string[] => {
+    const validatePassword = (password: string): string[] =>
+    {
         const errors: string[] = [];
-        if (password.length < 8) {
+        if (password.length < 8)
+        {
             errors.push("Password must be at least 8 characters long");
         }
-        if (!/[A-Z]/.test(password)) {
+        if (!/[A-Z]/.test(password))
+        {
             errors.push("Password must contain at least one uppercase letter");
         }
-        if (!/[a-z]/.test(password)) {
+        if (!/[a-z]/.test(password))
+        {
             errors.push("Password must contain at least one lowercase letter");
         }
-        if (!/[0-9]/.test(password)) {
+        if (!/[0-9]/.test(password))
+        {
             errors.push("Password must contain at least one number");
         }
         return errors;
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) =>
+    {
         e.preventDefault();
         setIsLoading(true);
         setError("");
 
         // Validate passwords match
-        if (newPassword !== confirmPassword) {
+        if (newPassword !== confirmPassword)
+        {
             setError("Passwords do not match.");
             setIsLoading(false);
             return;
@@ -52,47 +63,55 @@ const ResetPassword: React.FC = () => {
 
         // Validate password strength
         const passwordErrors = validatePassword(newPassword);
-        if (passwordErrors.length > 0) {
+        if (passwordErrors.length > 0)
+        {
             setError(passwordErrors.join(". "));
             setIsLoading(false);
             return;
         }
 
-        try {
+        try
+        {
             const response = await fetch("/api/auth/reset-password", {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
+                    "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
                     token,
                     new_password: newPassword
-                }),
+                })
             });
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
+            if (response.ok && data.success)
+            {
                 setSuccess(true);
                 // remove authentication token from local storage
                 localStorage.removeItem("auth_token");
 
                 // Redirect to login after 3 seconds
-                setTimeout(() => {
+                setTimeout(() =>
+                {
                     navigate("/login");
                 }, 3000);
-            } else {
+            } else
+            {
                 setError(data.error || "An error occurred. Please try again.");
             }
-        } catch (err) {
+        } catch (err)
+        {
             console.error("Reset password error:", err);
             setError("An error occurred. Please try again.");
-        } finally {
+        } finally
+        {
             setIsLoading(false);
         }
     };
 
-    if (success) {
+    if (success)
+    {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
                 <Card className="w-full max-w-md">
