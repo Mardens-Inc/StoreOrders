@@ -8,9 +8,9 @@ export interface StoreOrderRecordDto
     /** Order number */
     order_number: string;
     /** User ID associated with the order */
-    user_id: number;
+    user_id: string;
     /** Store ID associated with the order */
-    store_id: number;
+    store_id: string;
     /** Current status of the order */
     status: StoreOrderStatus | string; // backend returns string
     /** Total amount for the order */
