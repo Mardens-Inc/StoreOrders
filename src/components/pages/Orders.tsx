@@ -300,6 +300,7 @@ const Orders: React.FC = () =>
                             const items: OrderItemWithProductDto[] = details[order.id]?.items || [];
                             console.log("Order items: ", items);
                             const totalItems = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
+                            console.log("Stores", stores, "Order", order)
                             return (
                                 <Card key={order.id} className="hover:shadow-lg transition-shadow">
                                     <CardHeader>
@@ -307,7 +308,10 @@ const Orders: React.FC = () =>
                                             <div>
                                                 <h3 className="text-lg font-semibold text-gray-900">{order.order_number}</h3>
                                                 <p className="text-sm text-gray-500">
-                                                    Ordered on {new Date(order.created_at).toLocaleDateString()}
+                                                    Ordered on {new Date(order.created_at).toLocaleDateString()} by {stores.find(s => s.id === order.store_id)?.city || "Unknown Store"}
+                                                </p>
+                                                <p className="text-sm text-gray-500">
+                                                    Notes: {order.notes || "No notes"}
                                                 </p>
                                             </div>
                                             <Chip
