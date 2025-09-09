@@ -638,7 +638,7 @@ const ProductManagement: React.FC = () =>
                             >
 
                                 {[(<SelectItem key="" textValue="">All Categories</SelectItem>), ...categories.map((category) => (
-                                    <SelectItem key={category.id} textValue={category.id}>
+                                    <SelectItem key={category.id} textValue={category.name}>
                                         {category.name}
                                     </SelectItem>
                                 ))]}
