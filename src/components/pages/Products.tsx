@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from "react";
 import {useParams} from "react-router-dom";
-import {Button, ButtonGroup, Card, CardBody, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Image, Chip} from "@heroui/react";
+import {Button, ButtonGroup, Card, CardBody, Chip, Image, Pagination, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
 import {categoriesApi, productsApi} from "../../utils/api";
@@ -8,7 +8,8 @@ import {Category} from "./Categories.tsx";
 import {ProductItem} from "../product/ProductItem.tsx";
 import {Input} from "../extension/Input.tsx";
 
-enum ViewMode {
+enum ViewMode
+{
     GRID = "grid",
     LIST = "list",
     TABLE = "table",
@@ -20,7 +21,6 @@ const Products: React.FC = () =>
     const {categoryId} = useParams<{ categoryId: string }>();
     const {addToCart} = useCart();
     const [searchTerm, setSearchTerm] = useState("");
-    const [sortBy, setSortBy] = useState("name");
     const [viewMode, setViewMode] = useState<ViewMode>(
         localStorage.getItem("category_view_mode") as ViewMode || ViewMode.GRID
     );
@@ -28,6 +28,19 @@ const Products: React.FC = () =>
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [category, setCategory] = useState<Category | undefined>(undefined);
+
+    // Pagination state
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(() =>
+    {
+        const savedItemsPerPage = localStorage.getItem("items_per_page");
+        return savedItemsPerPage ? parseInt(savedItemsPerPage) : 25;
+    });
+
+    useEffect(() =>
+    {
+        localStorage.setItem("items_per_page", itemsPerPage.toString());
+    }, [itemsPerPage]);
 
     useEffect(() =>
     {
@@ -114,6 +127,21 @@ const Products: React.FC = () =>
         return filtered;
     }, [products, searchTerm]);
 
+    // Paginated products
+    const paginatedProducts = useMemo(() =>
+    {
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        return filteredAndSortedProducts.slice(startIndex, startIndex + itemsPerPage);
+    }, [filteredAndSortedProducts, currentPage, itemsPerPage]);
+
+    const totalPages = Math.ceil(filteredAndSortedProducts.length / itemsPerPage);
+
+    // Reset pagination when items per page or search changes
+    useEffect(() =>
+    {
+        setCurrentPage(1);
+    }, [itemsPerPage, searchTerm]);
+
     useEffect(() =>
     {
         localStorage.setItem("category_view_mode", viewMode);
@@ -138,7 +166,7 @@ const Products: React.FC = () =>
                         <TableColumn width={100}>ACTIONS</TableColumn>
                     </TableHeader>
                     <TableBody>
-                        {filteredAndSortedProducts.map((product) => (
+                        {paginatedProducts.map((product) => (
                             <TableRow key={product.id}>
                                 <TableCell>
                                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
@@ -205,24 +233,50 @@ const Products: React.FC = () =>
                         ))}
                     </TableBody>
                 </Table>
+                {totalPages > 1 && (
+                    <div className="flex justify-center mt-4">
+                        <Pagination
+                            loop
+                            isCompact
+                            showControls
+                            page={currentPage}
+                            total={totalPages}
+                            onChange={setCurrentPage}
+                        />
+                    </div>
+                )}
             </CardBody>
         </Card>
     );
 
     const renderGridView = () => (
-        <div className={viewMode === ViewMode.GRID || viewMode === ViewMode.GRID_COMPACT
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-            : "space-y-4"
-        }>
-            {filteredAndSortedProducts.map((product) =>
-                <ProductItem
-                    key={product.id}
-                    product={product}
-                    viewMode={viewMode}
-                    onAddToCart={handleAddToCart}
-                />
+        <>
+            <div className={viewMode === ViewMode.GRID || viewMode === ViewMode.GRID_COMPACT
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                : "space-y-4"
+            }>
+                {paginatedProducts.map((product) =>
+                    <ProductItem
+                        key={product.id}
+                        product={product}
+                        viewMode={viewMode}
+                        onAddToCart={handleAddToCart}
+                    />
+                )}
+            </div>
+            {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                    <Pagination
+                        loop
+                        isCompact
+                        showControls
+                        page={currentPage}
+                        total={totalPages}
+                        onChange={setCurrentPage}
+                    />
+                </div>
             )}
-        </div>
+        </>
     );
 
     if (loading)
@@ -261,27 +315,37 @@ const Products: React.FC = () =>
                     <p className="text-gray-600">
                         {categoryId ? <>Browse <span className={"font-bold italic"}>{category?.name}</span> products</> : "Browse all available products"}
                     </p>
+                    {filteredAndSortedProducts.length > 0 && (
+                        <div className="text-sm text-gray-500">
+                            Showing {Math.min((currentPage - 1) * itemsPerPage + 1, filteredAndSortedProducts.length)}-{Math.min(currentPage * itemsPerPage, filteredAndSortedProducts.length)} of {filteredAndSortedProducts.length} products
+                        </div>
+                    )}
                 </div>
 
                 {/* Search and Filters */}
                 <div className="flex flex-col sm:flex-row gap-4">
                     <Input
-                        placeholder="Search products..."
+                        label={"Search products"}
+                        placeholder="NB-001, Nike, Shoes, Tarps..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         startContent={<Icon icon="lucide:search" className="w-4 h-4 text-gray-400"/>}
                         className="w-full sm:w-80"
+                        size={"sm"}
                     />
 
                     <Select
-                        placeholder="Sort by"
-                        selectedKeys={[sortBy]}
-                        onSelectionChange={(keys) => setSortBy(Array.from(keys)[0] as string)}
-                        className="w-full sm:w-40"
+                        label={"Items per Page"}
+                        selectedKeys={[itemsPerPage.toString()]}
+                        onSelectionChange={(keys) => setItemsPerPage(Number(Array.from(keys)[0]))}
+                        className="min-w-48 w-48"
+                        size="sm"
                     >
-                        <SelectItem key="name">Name</SelectItem>
+                        <SelectItem key="10" textValue="10">10</SelectItem>
+                        <SelectItem key="25" textValue="25">25</SelectItem>
+                        <SelectItem key="50" textValue="50">50</SelectItem>
+                        <SelectItem key="100" textValue="100">100</SelectItem>
                     </Select>
-
                     {/* View Mode Toggle */}
                     <ButtonGroup>
                         <Button
@@ -319,6 +383,7 @@ const Products: React.FC = () =>
                     </ButtonGroup>
                 </div>
             </div>
+
 
             {/* Products Grid/List/Table */}
             {filteredAndSortedProducts.length === 0 ? (
