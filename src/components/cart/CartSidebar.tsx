@@ -49,6 +49,7 @@ const CartSidebar: React.FC = () =>
             placement="right"
             size={isMobile ? "full" : "md"}
             backdrop={"blur"}
+            hideCloseButton
         >
             <DrawerContent>
                 <DrawerHeader className="flex flex-col gap-1 px-4 sm:px-6">
