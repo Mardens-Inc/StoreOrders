@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Order Manifest Form</title>
+
+    <style>
+        html {
+            font-family: "Roboto", sans-serif;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            color: white;
+            background-color: #0c0c0c;
+        }
+
+        .table-section-header {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            text-align: center;
+            color: #333;
+            border-bottom: 2px solid #ddd;
+            padding: 8px;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-family: "Roboto", sans-serif;
+        }
+    </style>
+
+</head>
+<body>
+<h1>Calais | Store Order Form</h1>
+<hr>
+<p>Week Starting Date: 8/28/2025 | Order ID# 1234 | Order Status: Pending</p>
+<table>
+    <thead>
+    <tr>
+        <th>Bin Loc</th>
+        <th>Item Number</th>
+        <th>Description</th>
+        <th>Notes</th>
+        <th>Retail</th>
+        <th>MP</th>
+        <th>Quantity Ordered</th>
+        <th>Case Qty/Unit</th>
+        <th>Order Total</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td colspan="9" class="table-section-header">Foam & Batting</td>
+    </tr>
+    <tr>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+        <td>1234</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

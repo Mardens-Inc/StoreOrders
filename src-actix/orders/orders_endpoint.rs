@@ -7,7 +7,7 @@ use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Responder};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use serde_json::json;
-
+static MANIFEST_TEMPLATE: &str = include_str!("../../templates/order-manifest-template.html.tera");
 #[get("")]
 pub async fn get_orders(
     req: HttpRequest,
@@ -294,6 +294,39 @@ pub async fn add_to_cart(
             "error": "Product not found or out of stock"
         })))
     }
+}
+
+#[get("/{id}/manifest")]
+pub async fn get_order_manifest(
+    connection_data: web::Data<DatabaseConnectionData>,
+    path: web::Path<String>,
+) -> Result<impl Responder> {
+    let pool = connection_data.get_pool().await?;
+    let order_id = serde_hash::hashids::decode_single(path.as_str())?;
+
+    let order = match StoreOrderRecord::get_with_items(&pool, order_id).await? {
+        Some(order) => OrderWithItemsDto::from(&order),
+        None => {
+            return Ok(HttpResponse::NotFound().json(json!({
+                "success": false,
+                "error": "Order not found"
+            })))
+        }
+    };
+    let mut tera = tera::Tera::default();
+    tera.add_raw_template("order-manifest-template", MANIFEST_TEMPLATE)
+        .unwrap();
+    let manifest = tera
+        .render(
+            "order-manifest-template",
+            &tera::Context::from_serialize(order).map_err(|_| {
+                HttpResponse::InternalServerError().json(json!({
+                    "message": "Failed to render manifest template",
+                }))
+            })?,
+        )
+        .unwrap();
+    Ok(HttpResponse::Ok().content_type("text/html").body(manifest))
 }
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

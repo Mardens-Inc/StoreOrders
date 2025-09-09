@@ -1,8 +1,10 @@
-use sqlx::{Executor, MySqlPool, Row};
-use crate::orders::orders_data::{StoreOrderRecord, OrderItemRecord, OrderWithItems, OrderItemWithProduct, UserContext};
+use crate::orders::orders_data::{
+    OrderItemRecord, OrderItemWithProduct, OrderWithItems, StoreOrderRecord, UserContext,
+};
 use crate::orders::store_order_status::StoreOrderStatus;
-use rust_decimal::Decimal;
 use rust_decimal::prelude::FromPrimitive;
+use rust_decimal::Decimal;
+use sqlx::{Executor, MySqlPool, Row};
 
 // Define a custom struct for the order items with products query
 #[derive(sqlx::FromRow)]
@@ -67,7 +69,9 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
     .await?;
 
     // Normalize any existing values and enforce ENUM set regardless of current type
-    pool.execute("UPDATE orders SET status = UPPER(status)").await.ok();
+    pool.execute("UPDATE orders SET status = UPPER(status)")
+        .await
+        .ok();
     pool.execute("UPDATE orders SET status = 'PENDING' WHERE status NOT IN ('PENDING','SHIPPED','DELIVERED')").await.ok();
     pool.execute("ALTER TABLE orders MODIFY COLUMN `status` ENUM('PENDING','SHIPPED','DELIVERED') NOT NULL DEFAULT 'PENDING'").await.ok();
 
@@ -96,14 +100,13 @@ pub async fn initialize(pool: &MySqlPool) -> anyhow::Result<()> {
 }
 
 impl StoreOrderRecord {
-
     pub async fn get_all(pool: &MySqlPool) -> anyhow::Result<Vec<Self>> {
         let orders = sqlx::query_as::<_, Self>(
             r#"
             SELECT *
             FROM `orders`
             ORDER BY `created_at` DESC
-            "#
+            "#,
         )
         .fetch_all(pool);
         Ok(orders.await?)
@@ -125,7 +128,10 @@ impl StoreOrderRecord {
         Ok(orders)
     }
 
-    pub async fn get_orders_for_store(pool: &MySqlPool, store_id: u64) -> anyhow::Result<Vec<Self>> {
+    pub async fn get_orders_for_store(
+        pool: &MySqlPool,
+        store_id: u64,
+    ) -> anyhow::Result<Vec<Self>> {
         let orders = sqlx::query_as::<_, Self>(
             r#"
             SELECT id, order_number, user_id, store_id, status, total_amount,
@@ -158,7 +164,10 @@ impl StoreOrderRecord {
         Ok(order)
     }
 
-    pub async fn get_with_items(pool: &MySqlPool, id: u64) -> anyhow::Result<Option<OrderWithItems>> {
+    pub async fn get_with_items(
+        pool: &MySqlPool,
+        id: u64,
+    ) -> anyhow::Result<Option<OrderWithItems>> {
         let order = Self::get_by_id(pool, id).await?;
 
         if let Some(order) = order {
@@ -241,7 +250,7 @@ impl StoreOrderRecord {
                 SET `stock_quantity` = `stock_quantity` - ?,
                     `in_stock` = (`stock_quantity` - ?) > 0
                 WHERE `id` = ?
-                "#
+                "#,
             )
             .bind(quantity)
             .bind(quantity)
@@ -252,6 +261,15 @@ impl StoreOrderRecord {
 
         transaction.commit().await?;
         Ok(order_id)
+    }
+
+    pub async fn get_order_by_id(id: u64, pool: &MySqlPool) -> anyhow::Result<Option<Self>> {
+        Ok(
+            sqlx::query_as::<_, Self>(r#"select * from orders WHERE id = ? limit 1"#)
+                .bind(id)
+                .fetch_optional(pool)
+                .await?,
+        )
     }
 
     pub async fn update_status(
@@ -272,10 +290,10 @@ impl StoreOrderRecord {
         match status {
             StoreOrderStatus::Pending => {
                 query.push_str(", `status_changed_to_pending` = NOW()");
-            },
+            }
             StoreOrderStatus::Delivered => {
                 query.push_str(", `status_changed_to_completed` = NOW()");
-            },
+            }
             _ => {}
         }
 
@@ -294,7 +312,11 @@ impl StoreOrderRecord {
     async fn generate_order_number() -> String {
         use chrono::Utc;
         let now = Utc::now();
-        format!("ORD-{}-{:06}", now.format("%Y%m%d"), rand::random::<u32>() % 1000000)
+        format!(
+            "ORD-{}-{:06}",
+            now.format("%Y%m%d"),
+            rand::random::<u32>() % 1000000
+        )
     }
 }
 
@@ -317,7 +339,7 @@ impl OrderItemRecord {
             JOIN `products` p ON oi.product_id = p.id
             WHERE oi.order_id = ?
             ORDER BY oi.created_at ASC
-            "#
+            "#,
         )
         .bind(order_id)
         .fetch_all(pool)
