@@ -147,10 +147,10 @@ const Header: React.FC = () =>
                                     </Chip>
                                 </div>
                             </DropdownItem>
-                            <DropdownItem key="settings" startContent={<Icon icon="lucide:settings"/>}>
+                            <DropdownItem key="settings" startContent={<Icon icon="lucide:settings"/>} hidden>
                                 Settings
                             </DropdownItem>
-                            <DropdownItem key="help" startContent={<Icon icon="lucide:help-circle"/>}>
+                            <DropdownItem key="help" startContent={<Icon icon="lucide:help-circle"/>} as={"link"}>
                                 Help & Support
                             </DropdownItem>
                             <DropdownItem
