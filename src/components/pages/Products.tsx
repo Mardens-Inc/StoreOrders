@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from "react";
 import {useParams} from "react-router-dom";
-import {Button, ButtonGroup, Card, CardBody, Select, SelectItem, Spinner} from "@heroui/react";
+import {Button, ButtonGroup, Card, CardBody, Select, SelectItem, Spinner, Table, TableBody, TableCell, TableColumn, TableHeader, TableRow, Image, Chip} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {Product, useCart} from "../../providers/CartProvider";
 import {categoriesApi, productsApi} from "../../utils/api";
@@ -8,13 +8,22 @@ import {Category} from "./Categories.tsx";
 import {ProductItem} from "../product/ProductItem.tsx";
 import {Input} from "../extension/Input.tsx";
 
+enum ViewMode {
+    GRID = "grid",
+    LIST = "list",
+    TABLE = "table",
+    GRID_COMPACT = "grid-compact",
+}
+
 const Products: React.FC = () =>
 {
     const {categoryId} = useParams<{ categoryId: string }>();
     const {addToCart} = useCart();
     const [searchTerm, setSearchTerm] = useState("");
     const [sortBy, setSortBy] = useState("name");
-    const [viewMode, setViewMode] = useState<"grid" | "list">(localStorage.getItem("category_view_mode") === "list" ? "list" : "grid");
+    const [viewMode, setViewMode] = useState<ViewMode>(
+        localStorage.getItem("category_view_mode") as ViewMode || ViewMode.GRID
+    );
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -115,6 +124,107 @@ const Products: React.FC = () =>
         addToCart(product);
     };
 
+    const renderTableView = () => (
+        <Card>
+            <CardBody>
+                <Table aria-label="Products table" removeWrapper>
+                    <TableHeader>
+                        <TableColumn width={80}>IMAGE</TableColumn>
+                        <TableColumn>NAME</TableColumn>
+                        <TableColumn>SKU</TableColumn>
+                        <TableColumn>PRICE</TableColumn>
+                        <TableColumn>STOCK</TableColumn>
+                        <TableColumn>STATUS</TableColumn>
+                        <TableColumn width={100}>ACTIONS</TableColumn>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredAndSortedProducts.map((product) => (
+                            <TableRow key={product.id}>
+                                <TableCell>
+                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                                        {product.image_url ? (
+                                            <Image
+                                                src={product.image_url}
+                                                alt={product.name}
+                                                className="w-full h-full object-cover"
+                                                radius="md"
+                                            />
+                                        ) : (
+                                            <Icon icon="lucide:image" className="w-6 h-6 text-gray-400"/>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div>
+                                        <p className="font-medium">{product.name}</p>
+                                        <p className="text-sm text-gray-500 truncate max-w-48">{product.description}</p>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{product.sku}</code>
+                                </TableCell>
+                                <TableCell>
+                                    <span className="font-semibold text-green-600">${product.price.toFixed(2)}</span>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Chip
+                                            color={product.in_stock ? "success" : "danger"}
+                                            variant="flat"
+                                            size="sm"
+                                        >
+                                            {product.in_stock ? "In Stock" : "Out of Stock"}
+                                        </Chip>
+                                        {product.stock_quantity !== undefined && (
+                                            <span className="text-sm text-gray-500">({product.stock_quantity})</span>
+                                        )}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip
+                                        color={product.is_active ? "success" : "warning"}
+                                        variant="flat"
+                                        size="sm"
+                                    >
+                                        {product.is_active ? "Active" : "Inactive"}
+                                    </Chip>
+                                </TableCell>
+                                <TableCell>
+                                    <Button
+                                        size="sm"
+                                        color="primary"
+                                        variant="flat"
+                                        onPress={() => handleAddToCart(product)}
+                                        isDisabled={!product.in_stock || !product.is_active}
+                                        startContent={<Icon icon="lucide:shopping-cart" className="w-4 h-4"/>}
+                                    >
+                                        Add
+                                    </Button>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardBody>
+        </Card>
+    );
+
+    const renderGridView = () => (
+        <div className={viewMode === ViewMode.GRID || viewMode === ViewMode.GRID_COMPACT
+            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "space-y-4"
+        }>
+            {filteredAndSortedProducts.map((product) =>
+                <ProductItem
+                    key={product.id}
+                    product={product}
+                    viewMode={viewMode}
+                    onAddToCart={handleAddToCart}
+                />
+            )}
+        </div>
+    );
+
     if (loading)
     {
         return (
@@ -175,26 +285,42 @@ const Products: React.FC = () =>
                     {/* View Mode Toggle */}
                     <ButtonGroup>
                         <Button
-                            variant={viewMode === "grid" ? "solid" : "bordered"}
-                            color={viewMode === "grid" ? "primary" : "default"}
-                            onPress={() => setViewMode("grid")}
+                            variant={viewMode === ViewMode.GRID ? "solid" : "bordered"}
+                            color={viewMode === ViewMode.GRID ? "primary" : "default"}
+                            onPress={() => setViewMode(ViewMode.GRID)}
                             isIconOnly
                         >
                             <Icon icon="lucide:grid-3x3" className="w-4 h-4"/>
                         </Button>
                         <Button
-                            variant={viewMode === "list" ? "solid" : "bordered"}
-                            color={viewMode === "list" ? "primary" : "default"}
-                            onPress={() => setViewMode("list")}
+                            variant={viewMode === ViewMode.GRID_COMPACT ? "solid" : "bordered"}
+                            color={viewMode === ViewMode.GRID_COMPACT ? "primary" : "default"}
+                            onPress={() => setViewMode(ViewMode.GRID_COMPACT)}
+                            isIconOnly
+                        >
+                            <Icon icon="lucide:grid-2x2" className="w-4 h-4"/>
+                        </Button>
+                        <Button
+                            variant={viewMode === ViewMode.LIST ? "solid" : "bordered"}
+                            color={viewMode === ViewMode.LIST ? "primary" : "default"}
+                            onPress={() => setViewMode(ViewMode.LIST)}
                             isIconOnly
                         >
                             <Icon icon="lucide:list" className="w-4 h-4"/>
+                        </Button>
+                        <Button
+                            variant={viewMode === ViewMode.TABLE ? "solid" : "bordered"}
+                            color={viewMode === ViewMode.TABLE ? "primary" : "default"}
+                            onPress={() => setViewMode(ViewMode.TABLE)}
+                            isIconOnly
+                        >
+                            <Icon icon="lucide:table" className="w-4 h-4"/>
                         </Button>
                     </ButtonGroup>
                 </div>
             </div>
 
-            {/* Products Grid/List */}
+            {/* Products Grid/List/Table */}
             {filteredAndSortedProducts.length === 0 ? (
                 <Card>
                     <CardBody className="text-center py-16">
@@ -206,12 +332,7 @@ const Products: React.FC = () =>
                     </CardBody>
                 </Card>
             ) : (
-                <div className={viewMode === "grid"
-                    ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                    : "space-y-4"
-                }>
-                    {filteredAndSortedProducts.map((product) => <ProductItem product={product} viewMode={viewMode} onAddToCart={handleAddToCart}/>)}
-                </div>
+                viewMode === ViewMode.TABLE ? renderTableView() : renderGridView()
             )}
         </div>
     );
