@@ -11,7 +11,9 @@ pub struct StoreOrderRecord {
     #[hash]
     pub id: u64,
     pub order_number: String,
+    #[hash]
     pub user_id: u64,
+    #[hash]
     pub store_id: u64,
     pub status: StoreOrderStatus,
     pub total_amount: Decimal,
@@ -26,7 +28,7 @@ impl<'r> FromRow<'r, MySqlRow> for StoreOrderRecord {
     fn from_row(row: &'r MySqlRow) -> Result<Self, sqlx::Error> {
         let status_raw: String = row.try_get("status")?;
         let status = StoreOrderStatus::from_str_case_insensitive(&status_raw)
-            .ok_or_else(|| sqlx::Error::Protocol(format!("Unexpected status value '{}'", status_raw).into()))?;
+            .ok_or_else(|| sqlx::Error::Protocol(format!("Unexpected status value '{}'", status_raw)))?;
         Ok(Self {
             id: row.try_get("id")?,
             order_number: row.try_get("order_number")?,
@@ -72,11 +74,13 @@ pub struct OrderItemWithProduct {
 }
 
 // DTOs for API (convert Decimal -> f64)
-#[derive(Debug, Serialize)]
+#[derive(Debug, HashIds)]
 pub struct StoreOrderRecordDto {
     pub id: String,
     pub order_number: String,
+    #[hash]
     pub user_id: u64,
+    #[hash]
     pub store_id: u64,
     pub status: StoreOrderStatus,
     pub total_amount: f64,

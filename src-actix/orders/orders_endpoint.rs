@@ -20,17 +20,15 @@ pub async fn get_orders(
         .ok_or_else(|| anyhow::anyhow!("Authentication required"))?;
     if claims.role == "admin" {
         let orders = StoreOrderRecord::get_all(&pool).await?;
-        let dto: Vec<StoreOrderRecordDto> = orders.iter().map(|o| o.into()).collect();
         Ok(HttpResponse::Ok().json(json!({
             "success": true,
-            "data": dto
+            "data": orders
         })))
     } else if let Some(store_id) = claims.store_id {
         let orders = StoreOrderRecord::get_orders_for_store(&pool, store_id).await?;
-        let dto: Vec<StoreOrderRecordDto> = orders.iter().map(|o| o.into()).collect();
         Ok(HttpResponse::Ok().json(json!({
             "success": true,
-            "data": dto
+            "data": orders
         })))
     } else {
         Ok(HttpResponse::Forbidden().json(json!({
