@@ -1,5 +1,5 @@
-mod categories_data;
-mod categories_db;
+pub mod categories_data;
+pub mod categories_db;
 mod categories_endpoint;
 
 pub use categories_db::initialize;

@@ -1,5 +1,5 @@
-mod products_data;
-mod products_db;
+pub mod products_data;
+pub mod products_db;
 mod products_endpoint;
 
 pub use products_data::ProductRecord;

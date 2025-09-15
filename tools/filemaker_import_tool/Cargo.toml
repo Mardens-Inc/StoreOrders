@@ -1,0 +1,15 @@
+[package]
+name = "filemaker_import_tool"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+filemaker-lib = {git="https://github.com/drew-chase/filemaker-lib.git"}
+tokio = {version = "1.47.1", features = ["rt", "macros"]}
+log = "0.4.28"
+pretty_env_logger = "0.5.0"
+anyhow = "1.0.99"
+store_orders = {path = "../../"}
+serde = {version = "1.0.219", features = ["derive", "serde_derive"]}
+serde_json = "1.0.125"
+database-common-lib = { git = "https://github.com/Mardens-Inc/database-common-lib.git" }

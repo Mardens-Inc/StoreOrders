@@ -12,12 +12,12 @@ use vite_actix::proxy_vite_options::ProxyViteOptions;
 use vite_actix::start_vite_server;
 
 mod asset_endpoint;
-mod auth;
-mod categories;
-mod orders;
-mod products;
-mod stores;
-mod upload;
+pub mod auth;
+pub mod categories;
+pub mod orders;
+pub mod products;
+pub mod stores;
+pub mod upload;
 
 pub static DEBUG: bool = cfg!(debug_assertions);
 pub async fn run() -> Result<()> {
