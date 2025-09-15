@@ -93,7 +93,9 @@ const Products: React.FC = () =>
                         is_active: apiProduct.product?.is_active ?? apiProduct.is_active ?? true,
                         created_at: apiProduct.product?.created_at ?? apiProduct.created_at,
                         updated_at: apiProduct.product?.updated_at ?? apiProduct.updated_at,
-                        image_url: apiProduct.product?.image_url ?? apiProduct.image_url
+                        image_url: apiProduct.product?.image_url ?? apiProduct.image_url,
+                        unit_type: apiProduct.product?.unit_type ?? apiProduct.unit_type,
+                        bin_location: apiProduct.product?.bin_location ?? apiProduct.bin_location,
                     }));
                     setProducts(transformedProducts);
                 } else

@@ -28,18 +28,20 @@ interface CreateProductRequest
 
 interface CreateProductModalProps
 {
+    mode: "create" | "edit";
     isOpen: boolean;
     onOpenChange: () => void;
     formData: CreateProductRequest;
     setFormData: React.Dispatch<React.SetStateAction<CreateProductRequest>>;
     categories: Category[];
-    onCreateProduct: () => Promise<void>;
+    onCreateProduct?: () => Promise<void>;
+    onUpdateProduct?: () => Promise<void>;
     onImageSelect: (file: File) => void;
     actionLoading: boolean;
     uploadingImage: boolean;
 }
 
-const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenChange, formData, setFormData, categories, onCreateProduct, onImageSelect, actionLoading, uploadingImage}) =>
+const CreateProductModal: React.FC<CreateProductModalProps> = ({mode, isOpen, onOpenChange, formData, setFormData, categories, onCreateProduct, onUpdateProduct, onImageSelect, actionLoading, uploadingImage}) =>
 {
     const [useCustomSKU, setUseCustomSKU] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
@@ -56,9 +58,12 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
 
     useEffect(() =>
     {
+        // Only auto-generate when the modal is open and in create mode
+        if (!isOpen) return;
+        if (mode === "edit") return; // do not auto-generate SKU in edit mode
         if (useCustomSKU) return;
         generateSKU();
-    }, [formData.name, selectedCategory, useCustomSKU]);
+    }, [formData.name, selectedCategory, useCustomSKU, mode, isOpen]);
 
 
     const generateSKU = useCallback(async () =>
@@ -96,11 +101,11 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
             <ModalContent>
                 {(onClose) => (
                     <>
-                        <ModalHeader>Create New Product</ModalHeader>
+                        <ModalHeader>{mode === "edit" ? "Edit Product" : "Create New Product"}</ModalHeader>
                         <ModalBody className="space-y-4">
                             <ImageUpload
                                 onImageSelect={onImageSelect}
-                                currentImageUrl={formData.image_url}
+                                currentImageUrl={mode === "edit" && formData.image_url ? `${formData.image_url}?v=${Date.now()}` : formData.image_url}
                                 disabled={uploadingImage}
                             />
                             <Input
@@ -119,23 +124,33 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
                                 isRequired
                             />
 
-                            <div className={"flex flex-row items-center gap-2"}>
-
+                            {mode === "edit" ? (
                                 <Input
                                     label="SKU"
                                     placeholder="Enter product SKU"
                                     value={formData.sku}
                                     onChange={(e) => setFormData(prev => ({...prev, sku: e.target.value}))}
-                                    isRequired={useCustomSKU}
-                                    variant={useCustomSKU ? undefined : "bordered"}
-                                    isDisabled={!useCustomSKU}
+                                    isRequired
                                 />
-                                <Tooltip content={useCustomSKU ? "Use auto-generated SKU" : "Use custom SKU"}>
-                                    <Button isIconOnly onPress={() => setUseCustomSKU(prev => !prev)} variant={"flat"} color={useCustomSKU ? "primary" : "default"}>
-                                        <Icon icon={useCustomSKU ? "mage:unlocked-fill" : "mage:lock-fill"} height={18}/>
-                                    </Button>
-                                </Tooltip>
-                            </div>
+                            ) : (
+                                <div className={"flex flex-row items-center gap-2"}>
+
+                                    <Input
+                                        label="SKU"
+                                        placeholder="Enter product SKU"
+                                        value={formData.sku}
+                                        onChange={(e) => setFormData(prev => ({...prev, sku: e.target.value}))}
+                                        isRequired={useCustomSKU}
+                                        variant={useCustomSKU ? undefined : "bordered"}
+                                        isDisabled={!useCustomSKU}
+                                    />
+                                    <Tooltip content={useCustomSKU ? "Use auto-generated SKU" : "Use custom SKU"}>
+                                        <Button isIconOnly onPress={() => setUseCustomSKU(prev => !prev)} variant={"flat"} color={useCustomSKU ? "primary" : "default"}>
+                                            <Icon icon={useCustomSKU ? "mage:unlocked-fill" : "mage:lock-fill"} height={18}/>
+                                        </Button>
+                                    </Tooltip>
+                                </div>
+                            )}
 
                             <Input
                                 type="number"
@@ -200,11 +215,11 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
                             </Button>
                             <Button
                                 color="primary"
-                                onPress={onCreateProduct}
+                                onPress={mode === "edit" ? onUpdateProduct : onCreateProduct}
                                 isLoading={actionLoading}
                                 spinner={<Spinner color="white" size="sm"/>}
                             >
-                                Create Product
+                                {mode === "edit" ? "Update Product" : "Create Product"}
                             </Button>
                         </ModalFooter>
                     </>

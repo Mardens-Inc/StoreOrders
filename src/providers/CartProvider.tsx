@@ -118,3 +118,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     </CartContext.Provider>
   );
 };
+
+export function unitTypeToString(unitType: number | undefined): string {
+  switch (unitType) {
+    case 0:
+      return 'Each';
+    case 1:
+      return 'Case';
+    case 2:
+      return 'Roll';
+    default:
+      return 'Unknown';
+  }
+}

@@ -6,7 +6,7 @@ import {useCart} from "../../providers/CartProvider";
 import {useLayout} from "../../providers/LayoutProvider";
 import {Input} from "../extension/Input.tsx";
 import {authApi, ordersApi, productsApi} from "../../utils/api.ts";
-import EditProductModal from "../modals/EditProductModal";
+import CreateProductModal from "../modals/CreateProductModal";
 import EditUserModal from "../modals/EditUserModal";
 import {categoriesApi, storesApi} from "../../utils/api";
 
@@ -19,7 +19,7 @@ const Header: React.FC = () =>
     // Product edit modal state
     const [isEditProductOpen, setIsEditProductOpen] = useState(false);
     const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-    const [productForm, setProductForm] = useState<any>({name: "", description: "", sku: "", category_id: "", image_url: "", price: 0});
+    const [productForm, setProductForm] = useState<any>({name: "", description: "", sku: "", category_id: "", image_url: "", price: 0, bin_location: "", unit_type: 0});
     const [productCategories, setProductCategories] = useState<any[]>([]);
     const [productActionLoading, setProductActionLoading] = useState(false);
     const [uploadingImage, setUploadingImage] = useState(false);
@@ -328,7 +328,9 @@ const Header: React.FC = () =>
                                                                         sku: prodData.product?.sku || prodData.sku || "",
                                                                         category_id: prodData.product?.category_id || prodData.category_id || "",
                                                                         image_url: prodData.product?.image_url || prodData.image_url || "",
-                                                                        price: prodData.product?.price ?? prodData.price ?? 0
+                                                                        price: prodData.product?.price ?? prodData.price ?? 0,
+                                                                        bin_location: prodData.product?.bin_location || prodData.bin_location || "",
+                                                                        unit_type: (prodData.product?.unit_type ?? prodData.unit_type ?? 0)
                                                                     };
                                                                     setProductForm(merged);
                                                                     if (productCategories.length === 0) setProductCategories((catsResp as any)?.data || []);
@@ -517,39 +519,33 @@ const Header: React.FC = () =>
                 </NavbarItem>
             </NavbarContent>
 
-            {/* Edit Product Modal */}
-            <EditProductModal
+            {/* Product Modal (Edit) */}
+            <CreateProductModal
+                mode="edit"
                 isOpen={isEditProductOpen}
                 onOpenChange={() => setIsEditProductOpen(o => !o)}
                 formData={productForm}
                 setFormData={setProductForm}
                 categories={productCategories}
-                onUpdateProduct={async () =>
-                {
+                onUpdateProduct={async () => {
                     if (!selectedProductId) return;
-                    try
-                    {
+                    try {
                         setProductActionLoading(true);
                         await productsApi.updateProduct(selectedProductId, productForm);
-                        setProductResults(prev => prev.map(pr => pr.id === selectedProductId ? {...pr, ...productForm} : pr));
+                        setProductResults(prev => prev.map(pr => pr.id === selectedProductId ? { ...pr, ...productForm } : pr));
                         setIsEditProductOpen(false);
-                    } catch (e)
-                    {
+                    } catch (e) {
                         console.error("Failed to update product from header", e);
-                    } finally
-                    {
+                    } finally {
                         setProductActionLoading(false);
                     }
                 }}
-                onImageSelect={(file: File) =>
-                {
-                    try
-                    {
+                onImageSelect={(file: File) => {
+                    try {
                         setUploadingImage(true);
                         const url = URL.createObjectURL(file);
-                        setProductForm((prev: any) => ({...prev, image_url: url}));
-                    } finally
-                    {
+                        setProductForm((prev: any) => ({ ...prev, image_url: url }));
+                    } finally {
                         setUploadingImage(false);
                     }
                 }}

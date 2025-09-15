@@ -5,7 +5,6 @@ import {useAuth} from "../../providers/AuthProvider";
 import {categoriesApi, productsApi} from "../../utils/api";
 import ImageCropModal from "../ImageCropModal";
 import CreateProductModal from "../modals/CreateProductModal";
-import EditProductModal from "../modals/EditProductModal";
 import DeleteProductModal from "../modals/DeleteProductModal";
 import CreateCategoryModal from "../modals/CreateCategoryModal";
 import EditCategoryModal from "../modals/EditCategoryModal";
@@ -42,6 +41,8 @@ interface UpdateProductRequest
     image_url?: string;
     is_active?: boolean;
     price?: number;
+    bin_location?: string;
+    unit_type?: number; // 0=Each,1=Case,2=Roll
 }
 
 interface CreateCategoryRequest
@@ -217,7 +218,9 @@ const ProductManagement: React.FC = () =>
                 category_id: formData.category_id || undefined,
                 image_url: formData.image_url || undefined,
                 is_active: true,
-                price: formData.price || undefined
+                price: formData.price || undefined,
+                bin_location: formData.bin_location || undefined,
+                unit_type: (formData.unit_type ?? undefined)
             };
             const response = await productsApi.updateProduct(selectedProduct.id, updateData);
 
@@ -771,8 +774,9 @@ const ProductManagement: React.FC = () =>
                 </CardBody>
             </Card>
 
-            {/* Create Product Modal */}
+            {/* Product Modal (Create) */}
             <CreateProductModal
+                mode="create"
                 isOpen={isCreateOpen}
                 onOpenChange={onCreateOpenChange}
                 formData={formData}
@@ -784,8 +788,9 @@ const ProductManagement: React.FC = () =>
                 uploadingImage={uploadingImage || !!pendingNewProductImage}
             />
 
-            {/* Edit Product Modal */}
-            <EditProductModal
+            {/* Product Modal (Edit) */}
+            <CreateProductModal
+                mode="edit"
                 isOpen={isEditOpen}
                 onOpenChange={onEditOpenChange}
                 formData={formData}

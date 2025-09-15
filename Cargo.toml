@@ -3,7 +3,7 @@ members = ["tools/filemaker_import_tool"]
 
 [package]
 name = "store_orders"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 authors = ["Drew Chase (Work) <dcmanproductions@gmail.com>"]
 build = "src-actix/build.rs"

@@ -1,6 +1,6 @@
 import {Button, Card, CardBody, Chip} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
-import {Product} from "../../providers/CartProvider.tsx";
+import {Product, unitTypeToString} from "../../providers/CartProvider.tsx";
 
 type ProductItemProps = {
     product: Product;
@@ -30,7 +30,7 @@ export const ProductItem = (props: ProductItemProps) =>
                                     variant="flat"
                                     size="sm"
                                 >
-                                    {product.in_stock ? "In Stock" : "Out of Stock"}
+                                    {product.in_stock ? `${product.stock_quantity} ${unitTypeToString(product.unit_type)} in Stock` : "Out of Stock"}
                                 </Chip>
                                 <Chip
                                     color={product.is_active ? "success" : "warning"}
