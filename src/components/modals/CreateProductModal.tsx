@@ -22,6 +22,8 @@ interface CreateProductRequest
     category_id: string;
     image_url?: string;
     price: number;
+    bin_location: string;
+    unit_type: number; // 0=Each,1=Case,2=Roll
 }
 
 interface CreateProductModalProps
@@ -145,6 +147,29 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({isOpen, onOpenCh
                                 min={0}
                                 step={0.01}
                             />
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <Input
+                                    label="Bin Location"
+                                    placeholder="e.g., A1-03"
+                                    value={formData.bin_location}
+                                    onChange={(e) => setFormData(prev => ({...prev, bin_location: e.target.value}))}
+                                    isRequired
+                                />
+                                <Select
+                                    label="Unit Type"
+                                    selectedKeys={[String(formData.unit_type)]}
+                                    onSelectionChange={(keys) => {
+                                        const selectedKey = Array.from(keys)[0] as string;
+                                        setFormData(prev => ({...prev, unit_type: parseInt(selectedKey, 10)}));
+                                    }}
+                                    isRequired
+                                >
+                                    <SelectItem key="0">Each</SelectItem>
+                                    <SelectItem key="1">Case</SelectItem>
+                                    <SelectItem key="2">Roll</SelectItem>
+                                </Select>
+                            </div>
 
                             <Select
                                 label="Category"

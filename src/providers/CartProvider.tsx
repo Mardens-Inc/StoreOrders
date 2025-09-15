@@ -14,6 +14,8 @@ export interface Product {
   created_at?: string;
   updated_at?: string;
   image_url?: string;
+  bin_location?: string;
+  unit_type?: number;
 }
 
 export interface CartItem {

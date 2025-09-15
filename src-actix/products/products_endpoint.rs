@@ -89,6 +89,8 @@ pub async fn create_product(
         category_id,
         request.image_url.as_deref(),
         request.price,
+        &request.bin_location,
+        u8::from(request.unit_type) as i32,
     ).await?;
 
     Ok(HttpResponse::Created().json(json!({
@@ -137,6 +139,8 @@ pub async fn update_product(
         request.image_url.as_deref(),
         request.is_active,
         request.price,
+        request.bin_location.as_deref(),
+        request.unit_type.map(|u| u8::from(u) as i32),
     ).await? {
         Some(product) => Ok(HttpResponse::Ok().json(json!({
             "success": true,

@@ -29,6 +29,8 @@ interface CreateProductRequest
     category_id: string;
     image_url?: string;
     price: number;
+    bin_location: string;
+    unit_type: number; // 0=Each,1=Case,2=Roll
 }
 
 interface UpdateProductRequest
@@ -62,7 +64,9 @@ const INITIAL_PRODUCT_FORM: CreateProductRequest = {
     sku: "",
     category_id: "",
     image_url: "",
-    price: 0
+    price: 0,
+    bin_location: "",
+    unit_type: 0
 };
 
 const ProductManagement: React.FC = () =>
@@ -286,7 +290,9 @@ const ProductManagement: React.FC = () =>
             sku: product.sku,
             category_id: product.category_id,
             image_url: product.image_url || "",
-            price: product.price || 0
+            price: product.price || 0,
+            bin_location: product.bin_location || "",
+            unit_type: (product.unit_type ?? 0)
         });
         onEditOpen();
     };

@@ -1,8 +1,10 @@
+use anyhow::Result;
 use database_common_lib::database_connection::{set_database_name, DatabaseConnectionData};
 use filemaker_lib::Filemaker;
 use log::info;
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
+use sqlx::{MySql, Transaction};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -84,7 +86,7 @@ impl<'de> Deserialize<'de> for OrderItem {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<()> {
     pretty_env_logger::env_logger::builder()
         .format_timestamp(None)
         .filter_level(log::LevelFilter::Debug)
@@ -104,14 +106,71 @@ async fn main() -> anyhow::Result<()> {
     set_database_name("stores")?;
     let connection_data = DatabaseConnectionData::get().await?;
     let pool = connection_data.get_pool().await?;
+    let mut transaction = pool.begin().await?;
 
-    println!("Item: {:?}", items[0]);
 
-    //    for item in items {
-    //        ProductRecord::create(&pool, item.desc_full.trim(), "")
-    //    }
+    let categories = import_categories(&items, &mut transaction).await?;
+    import_items(&items, categories, &mut transaction).await?;
 
+    transaction.commit().await?;
     pool.close().await;
+    Ok(())
+}
+
+async fn import_categories(
+    items: &[OrderItem],
+    transaction: &mut Transaction<'_, MySql>,
+) -> Result<HashMap<String, u64>> {
+    let mut category_names = items
+        .iter()
+        .map(|i| i.filter_name.clone())
+        .collect::<Vec<String>>();
+    category_names.sort();
+    category_names.dedup();
+
+    let mut categories: HashMap<String, u64> = HashMap::new();
+
+    // Clear the "categories" table and the referenced products
+    sqlx::query(r#"delete from categories"#)
+        .execute(&mut **transaction)
+        .await?;
+
+    for name in category_names {
+        let result = sqlx::query(r#"insert into categories (name, description, icon, parent_id) VALUES (?, NULL, NULL, NULL);"#)
+            .bind(&name)
+            .execute(&mut **transaction).await?;
+        let id = result.last_insert_id();
+        categories.insert(name, id);
+    }
+
+    Ok(categories)
+}
+
+async fn import_items(
+    items: &[OrderItem],
+    categories: HashMap<String, u64>,
+    transaction: &mut Transaction<'_, MySql>,
+) -> Result<()> {
+    // Clear the "products" table
+    sqlx::query(r#"delete from products"#)
+        .execute(&mut **transaction)
+        .await?;
+
+    for item in items {
+        let category_id = categories.get(&item.filter_name).unwrap_or(&0);
+
+        sqlx::query(r#"insert into products (name, description, sku, category_id, image_url, price, in_stock, stock_quantity, bin_location, unit_type) values (?, ?, ?, ?, NULL, ?, ?, ?, ?, ?);"#)
+            .bind(&item.desc_short.trim_end_matches("..."))
+            .bind(&item.desc_full)
+            .bind(&item.item_number)
+            .bind(category_id)
+            .bind(item.mp)
+            .bind(if item.cases_on_hand > 0f64 { 1u8 } else { 0u8 })
+            .bind(item.cases_on_hand)
+            .bind(format!("{}, {}", item.bin_loc1, item.bin_loc2))
+            .bind(match item.unit.to_lowercase().as_str() {"each"=>0u8,"case"=>1u8,"roll"=> 2u8,_=>0u8})
+            .execute(&mut **transaction).await?;
+    }
 
     Ok(())
 }

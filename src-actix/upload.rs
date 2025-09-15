@@ -85,6 +85,8 @@ pub async fn upload_product_image(
         Some(url.as_str()),
         None,
         None,
+        None,
+        None,
     )
     .await? {
         Some(_product) => Ok(HttpResponse::Ok().json(json!({

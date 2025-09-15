@@ -19,6 +19,8 @@ interface CreateProductRequest
     category_id: string;
     image_url?: string;
     price: number;
+    bin_location: string;
+    unit_type: number; // 0=Each,1=Case,2=Roll
 }
 
 interface EditProductModalProps
