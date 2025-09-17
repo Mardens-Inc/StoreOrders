@@ -1,0 +1,730 @@
+openapi: 3.0.0
+info:
+  title: openapi
+  version: 1.0.0
+paths:
+  /api/auth/admin/create-user:
+    post:
+      summary: Admin Create User
+      operationId: Admin Create User
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/admin_create_user'
+      security:
+        admin_create_user: []
+  /api/auth/admin/reset-password:
+    post:
+      summary: Admin Reset User Password
+      operationId: Admin Reset User Password
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/admin_reset_user_password'
+  /api/auth/forgot-password:
+    post:
+      summary: Forgot Password
+      operationId: Forgot Password
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/forgot_password'
+  /api/auth/users:
+    get:
+      summary: Get Users
+      operationId: Get Users
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+  /api/auth/me:
+    get:
+      summary: Me
+      operationId: Me
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+  /api/auth/refresh:
+    post:
+      summary: Refresh JWT token
+      operationId: Refresh JWT token
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/refresh_jwt_token'
+      security:
+        refresh_jwt_token: []
+  /api/auth/reset-password:
+    post:
+      summary: Reset Password
+      operationId: Reset Password
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/reset_password'
+  /api/auth/login:
+    post:
+      summary: User login
+      operationId: User login
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/user_login'
+      security:
+        user_login: []
+  /api/auth/register:
+    post:
+      summary: User registration
+      operationId: User registration
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/user_registration'
+      security:
+        user_registration: []
+  /api/auth/admin/disable-user:
+    post:
+      summary: Disable User
+      operationId: Disable User
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/disable_user'
+  /api/auth/admin/enable-user/:user_id:
+    post:
+      summary: Enable User
+      operationId: Enable User
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: user_id
+          in: query
+          description: ''
+          required: true
+          example: ''
+  /api/auth/admin/disabled-users/:user_id:
+    get:
+      summary: Get Disabled User
+      operationId: Get Disabled User
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: user_id
+          in: query
+          description: ''
+          required: true
+          example: ''
+  /api/auth/admin/disabled-users:
+    get:
+      summary: Get Disabled Users
+      operationId: Get Disabled Users
+      description: ''
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: ''
+  /api/categories:
+    post:
+      summary: Create a new category
+      operationId: Create a new category
+      description: ''
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/create_a_new_category'
+      security:
+        create_a_new_category: []
+    get:
+      summary: Get all categories
+      operationId: Get all categories
+      description: ''
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: parent_id
+          in: query
+          description: ''
+          required: false
+          example: ''
+      security:
+        get_all_categories: []
+  /api/categories/:id:
+    get:
+      summary: Get category by ID
+      operationId: Get category by ID
+      description: ''
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      security:
+        get_category_by_id: []
+    put:
+      summary: Update category
+      operationId: Update category
+      description: ''
+      tags:
+        - Categories
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      requestBody:
+        $ref: '#/components/requestBodies/update_category'
+      security:
+        update_category: []
+  /api/orders/cart/add:
+    post:
+      summary: Add item to cart
+      operationId: Add item to cart
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/add_item_to_cart'
+      security:
+        add_item_to_cart: []
+  /api/orders:
+    post:
+      summary: Create a new order
+      operationId: Create a new order
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/create_a_new_order'
+      security:
+        create_a_new_order: []
+    get:
+      summary: Get user orders
+      operationId: Get user orders
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      security:
+        get_user_orders: []
+  /api/orders/:id:
+    get:
+      summary: Get order by ID
+      operationId: Get order by ID
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      security:
+        get_order_by_id: []
+  /api/orders/store/:store_id:
+    get:
+      summary: Get store orders
+      operationId: Get store orders
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: store_id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      security:
+        get_store_orders: []
+  /api/orders/:id/status:
+    put:
+      summary: Update order status
+      operationId: Update order status
+      description: ''
+      tags:
+        - Orders
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      requestBody:
+        $ref: '#/components/requestBodies/update_order_status'
+      security:
+        update_order_status: []
+  /api/products:
+    post:
+      summary: Create a new product
+      operationId: Create a new product
+      description: ''
+      tags:
+        - Products
+      responses:
+        '200':
+          description: ''
+      requestBody:
+        $ref: '#/components/requestBodies/create_a_new_product'
+      security:
+        create_a_new_product: []
+    get:
+      summary: Get all products
+      operationId: Get all products
+      description: ''
+      tags:
+        - Products
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: category_id
+          in: query
+          description: ''
+          required: false
+          example: ''
+        - name: in_stock
+          in: query
+          description: ''
+          required: false
+          example: ''
+        - name: is_active
+          in: query
+          description: ''
+          required: false
+          example: ''
+      security:
+        get_all_products: []
+  /api/products/:id:
+    get:
+      summary: Get product by ID
+      operationId: Get product by ID
+      description: ''
+      tags:
+        - Products
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      security:
+        get_product_by_id: []
+    put:
+      summary: Update product
+      operationId: Update product
+      description: ''
+      tags:
+        - Products
+      responses:
+        '200':
+          description: ''
+      parameters:
+        - name: id
+          in: query
+          description: ''
+          required: true
+          example: ''
+      requestBody:
+        $ref: '#/components/requestBodies/update_product'
+      security:
+        update_product: []
+servers:
+  - url: https://store-orders.mardens.com
+components:
+  schemas:
+    admin_create_user:
+      type: object
+      properties:
+        email:
+          type: string
+        role:
+          type: string
+        store_id:
+          type: string
+    admin_reset_user_password:
+      type: object
+      properties:
+        user_id:
+          type: string
+    forgot_password:
+      type: object
+      properties:
+        email:
+          type: string
+    refresh_jwt_token:
+      type: object
+      properties:
+        refresh_token:
+          type: string
+    reset_password:
+      type: object
+      properties:
+        token:
+          type: string
+        new_password:
+          type: string
+    user_login:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+    user_registration:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        role:
+          type: string
+        store_id:
+          type: string
+    disable_user:
+      type: object
+      properties:
+        user_id:
+          type: string
+        reason:
+          type: string
+        expiration:
+          type: string
+    create_a_new_category:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parent_id:
+          type: string
+        sort_order:
+          type: string
+    update_category:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        parent_id:
+          type: string
+        sort_order:
+          type: string
+        is_active:
+          type: string
+    add_item_to_cart:
+      type: object
+      properties:
+        product_id:
+          type: string
+        quantity:
+          type: number
+    create_a_new_order:
+      type: object
+      properties:
+        store_id:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+          properties:
+            '0':
+              type: object
+              properties:
+                product_id:
+                  type: string
+                quantity:
+                  type: number
+        notes:
+          type: string
+    update_order_status:
+      type: object
+      properties:
+        status:
+          type: string
+        notes:
+          type: string
+    create_a_new_product:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        price:
+          type: string
+        category_id:
+          type: string
+        image_url:
+          type: string
+        stock_quantity:
+          type: string
+    update_product:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        sku:
+          type: string
+        price:
+          type: string
+        category_id:
+          type: string
+        image_url:
+          type: string
+        in_stock:
+          type: string
+        stock_quantity:
+          type: string
+        is_active:
+          type: string
+  requestBodies:
+    admin_create_user:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/admin_create_user'
+      description: ''
+      required: true
+    admin_reset_user_password:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/admin_reset_user_password'
+      description: ''
+      required: true
+    forgot_password:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/forgot_password'
+      description: ''
+      required: true
+    refresh_jwt_token:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/refresh_jwt_token'
+      description: ''
+      required: true
+    reset_password:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/reset_password'
+      description: ''
+      required: true
+    user_login:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/user_login'
+      description: ''
+      required: true
+    user_registration:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/user_registration'
+      description: ''
+      required: true
+    disable_user:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/disable_user'
+      description: ''
+      required: true
+    create_a_new_category:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/create_a_new_category'
+      description: ''
+      required: true
+    update_category:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/update_category'
+      description: ''
+      required: true
+    add_item_to_cart:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/add_item_to_cart'
+      description: ''
+      required: true
+    create_a_new_order:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/create_a_new_order'
+      description: ''
+      required: true
+    update_order_status:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/update_order_status'
+      description: ''
+      required: true
+    create_a_new_product:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/create_a_new_product'
+      description: ''
+      required: true
+    update_product:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/update_product'
+      description: ''
+      required: true
+  securitySchemes:
+    admin_create_user:
+      type: http
+      scheme: bearer
+    refresh_jwt_token:
+      type: http
+      scheme: bearer
+    user_login:
+      type: http
+      scheme: bearer
+    user_registration:
+      type: http
+      scheme: bearer
+    create_a_new_category:
+      type: http
+      scheme: bearer
+    get_all_categories:
+      type: http
+      scheme: bearer
+    get_category_by_id:
+      type: http
+      scheme: bearer
+    update_category:
+      type: http
+      scheme: bearer
+    add_item_to_cart:
+      type: http
+      scheme: bearer
+    create_a_new_order:
+      type: http
+      scheme: bearer
+    get_order_by_id:
+      type: http
+      scheme: bearer
+    get_store_orders:
+      type: http
+      scheme: bearer
+    get_user_orders:
+      type: http
+      scheme: bearer
+    update_order_status:
+      type: http
+      scheme: bearer
+    create_a_new_product:
+      type: http
+      scheme: bearer
+    get_all_products:
+      type: http
+      scheme: bearer
+    get_product_by_id:
+      type: http
+      scheme: bearer
+    update_product:
+      type: http
+      scheme: bearer
