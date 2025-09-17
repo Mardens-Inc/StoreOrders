@@ -3,6 +3,7 @@
   <component name="EditMigrationStateService">
     <option name="migrationStatus" value="IN_PROGRESS" />
     <option name="pendingSessionIds">
+      <option value="1764e7a1-f366-4c22-83c6-e212a8d9aa59" />
       <option value="9f6f8c23-b7bf-4785-bbd8-544a3e578222" />
       <option value="b9ad0f08-85e7-4974-8f8d-ab75c712f904" />
     </option>
