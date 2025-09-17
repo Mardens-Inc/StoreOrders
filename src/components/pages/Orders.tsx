@@ -35,21 +35,19 @@ const Orders: React.FC = () =>
     // Fetch stores for admin filter
     useEffect(() =>
     {
-        if (role === "admin")
+        (async () =>
         {
-            (async () =>
+            try
             {
-                try
-                {
-                    const resp = await storesApi.getStores();
-                    const data = (resp as ApiResponse).data as any[];
-                    setStores((data || []).map(s => ({id: s.id, city: s.city ?? null, address: s.address ?? null})));
-                } catch (e)
-                {
-                    console.error("Failed to load stores", e);
-                }
-            })();
-        } else if (role === "store")
+                const resp = await storesApi.getStores();
+                const data = (resp as ApiResponse).data as any[];
+                setStores((data || []).map(s => ({id: s.id, city: s.city ?? null, address: s.address ?? null})));
+            } catch (e)
+            {
+                console.error("Failed to load stores", e);
+            }
+        })();
+        if (role === "store")
         {
             // For store users, lock selectedStore to their own store_id
             if (user?.store_id) setSelectedStore(user.store_id);
@@ -203,11 +201,21 @@ const Orders: React.FC = () =>
         return role === "admin" && s === "pending";
     };
 
-    const canStoreMarkDelivered = (order: StoreOrderRecordDto) =>
+    const openPrintManifestWindow = (order: StoreOrderRecordDto) =>
     {
-        const s = order.status.toLowerCase();
-        return role === "store" && s !== "delivered";
+        const url = `${window.location.origin}/api/orders/${order.id}/manifest`;
+        const newWindow = window.open(url, "_blank", "toolbar=no,scrollbars=no,resizable=no,width=1020,height=667");
+        newWindow?.focus();
+        if (newWindow)
+        {
+            newWindow.onload = () =>
+            {
+                newWindow.print();
+                newWindow.close();
+            };
+        }
     };
+
 
     return (
         <div className="p-6">
@@ -298,9 +306,7 @@ const Orders: React.FC = () =>
                         {
                             const detailsLoaded = !!details[order.id];
                             const items: OrderItemWithProductDto[] = details[order.id]?.items || [];
-                            console.log("Order items: ", items);
                             const totalItems = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
-                            console.log("Stores", stores, "Order", order)
                             return (
                                 <Card key={order.id} className="hover:shadow-lg transition-shadow">
                                     <CardHeader>
@@ -366,8 +372,8 @@ const Orders: React.FC = () =>
                                                         >
                                                             {detailsLoaded ? "Hide Details" : "View Details"}
                                                         </Button>
-                                                        {role === "admin" && canAdminSetShippedOrDelivered(order) && (
-                                                            <div className="flex gap-2">
+                                                        <div className="flex gap-2">
+                                                            {role === "admin" && canAdminSetShippedOrDelivered(order) && (
                                                                 <Button
                                                                     color="secondary"
                                                                     size="sm"
@@ -378,30 +384,16 @@ const Orders: React.FC = () =>
                                                                 >
                                                                     Mark Shipped
                                                                 </Button>
-                                                                <Button
-                                                                    color="success"
-                                                                    size="sm"
-                                                                    className="flex-1"
-                                                                    isDisabled={!!updating[order.id]}
-                                                                    onPress={() => updateStatus(order, "Delivered")}
-                                                                    startContent={<Icon icon="lucide:package-check" className="w-4 h-4"/>}
-                                                                >
-                                                                    Mark Delivered
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        {role === "store" && canStoreMarkDelivered(order) && (
+                                                            )}
                                                             <Button
-                                                                color="success"
                                                                 size="sm"
-                                                                className="w-full"
-                                                                isDisabled={!!updating[order.id]}
-                                                                onPress={() => updateStatus(order, "Delivered")}
-                                                                startContent={<Icon icon="lucide:package-check" className="w-4 h-4"/>}
+                                                                className="flex-1"
+                                                                onPress={() => openPrintManifestWindow(order)}
+                                                                startContent={<Icon icon="lucide:printer" className="w-4 h-4"/>}
                                                             >
-                                                                Mark as Delivered
+                                                                Print Manifest
                                                             </Button>
-                                                        )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
