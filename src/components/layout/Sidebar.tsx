@@ -4,6 +4,8 @@ import {Button, Card, Divider} from "@heroui/react";
 import {Icon} from "@iconify-icon/react";
 import {useAuth} from "../../providers/AuthProvider";
 import {useLayout} from "../../providers/LayoutProvider";
+import {StoreOption} from "../../utils/types.ts";
+import {ApiResponse, storesApi} from "../../utils/api.ts";
 
 const Sidebar: React.FC = () =>
 {
@@ -13,6 +15,25 @@ const Sidebar: React.FC = () =>
     const {user} = useAuth();
     const {setIsMobileMenuOpen, isMobile} = useLayout();
 
+
+    const [store, setStore] = useState<StoreOption | null>(null);
+    const role = user?.role; // "admin" | "store"
+    useEffect(() =>
+    {
+        (async () =>
+        {
+            try
+            {
+                const resp = await storesApi.getStores();
+                const data = (resp as ApiResponse).data as any[];
+                const stores = (data || []).map(s => ({id: s.id, city: s.city ?? null, address: s.address ?? null}));
+                if (user?.store_id) setStore(stores.find(i => i.id === user?.store_id) || null);
+            } catch (e)
+            {
+                console.error("Failed to load stores", e);
+            }
+        })();
+    }, [role, user?.store_id]);
     const navigationItems = [
         {
             id: "dashboard",
@@ -67,10 +88,12 @@ const Sidebar: React.FC = () =>
         return location.pathname.startsWith(path);
     };
 
-    const handleNavigation = (path: string) => {
+    const handleNavigation = (path: string) =>
+    {
         navigate(path);
         // Close mobile menu after navigation
-        if (isMobile) {
+        if (isMobile)
+        {
             setIsMobileMenuOpen(false);
         }
     };
@@ -85,7 +108,7 @@ const Sidebar: React.FC = () =>
     return (
         <Card className={`
             w-72 h-full rounded-none border-r shadow-sm relative
-            ${isMobile ? 'shadow-lg' : 'shadow-sm'}
+            ${isMobile ? "shadow-lg" : "shadow-sm"}
         `}>
             <div className="p-4 sm:p-6 relative flex flex-col h-full">
                 {/* Logo Section */}
@@ -95,7 +118,7 @@ const Sidebar: React.FC = () =>
                     </div>
                     <div className="min-w-0 flex-1">
                         <h1 className="text-base sm:text-lg font-bold text-gray-900 truncate">Mardens</h1>
-                        <p className="text-xs text-gray-500">Store Portal</p>
+                        <p className="text-xs text-gray-500">Store Portal{store ? ` - ${store.city}` : ""}</p>
                     </div>
                 </div>
 
