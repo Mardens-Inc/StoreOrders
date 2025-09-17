@@ -11,6 +11,16 @@
             font-family: "Roboto", sans-serif;
         }
 
+        #store-name{
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            font-weight: normal;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -20,6 +30,10 @@
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            font-size: 0.6rem;
+        }
+        p{
+            font-size: 0.7rem;
         }
 
         th {
@@ -43,17 +57,20 @@
 
 </head>
 <body>
-<h1>Calais | Store Order Form</h1>
+<h1> <span id="store-name">{{ store_name }}</span> | Store Order Form</h1>
 <hr>
-<p>Week Starting Date: 8/28/2025 | Order ID# 1234 | Order Status: Pending</p>
+<p>
+    Order #: {{ dto.order_number }} | Status: {{ dto.status }} | Placed: {{ dto.created_at }}
+</p>
+<p>
+    {{ dto.notes | default(value="") }}
+</p>
 <table>
     <thead>
     <tr>
         <th>Bin Loc</th>
         <th>Item Number</th>
         <th>Description</th>
-        <th>Notes</th>
-        <th>Retail</th>
         <th>MP</th>
         <th>Quantity Ordered</th>
         <th>Case Qty/Unit</th>
@@ -61,20 +78,22 @@
     </tr>
     </thead>
     <tbody>
+    {% for group in groups %}
     <tr>
-        <td colspan="9" class="table-section-header">Foam & Batting</td>
+        <td colspan="9" class="table-section-header">{{ group.category_name }}</td>
     </tr>
+    {% for it in group.items %}
     <tr>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
-        <td>1234</td>
+        <td>{{ it.product_bin_location }}</td>
+        <td>{{ it.product_sku }}</td>
+        <td>{{ it.product_name }}</td>
+        <td>${{ it.unit_price }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>{% if it.product_unit_type == 0 %}each{% elif it.product_unit_type == 1 %}case{% elif it.product_unit_type == 2 %}roll{% else %}?{% endif %}</td>
+        <td>${{ it.total_price }}</td>
     </tr>
+    {% endfor %}
+    {% endfor %}
     </tbody>
 </table>
 </body>

@@ -71,6 +71,9 @@ pub struct OrderItemWithProduct {
     pub product_name: String,
     pub product_sku: String,
     pub product_image_url: Option<String>,
+    pub category_name: String,
+    pub product_bin_location: String,
+    pub product_unit_type: i32,
 }
 
 // DTOs for API (convert Decimal -> f64)
@@ -141,6 +144,9 @@ pub struct OrderItemWithProductDto {
     pub product_name: String,
     pub product_sku: String,
     pub product_image_url: Option<String>,
+    pub category_name: String,
+    pub product_bin_location: String,
+    pub product_unit_type: i32,
 }
 
 impl From<&OrderItemWithProduct> for OrderItemWithProductDto {
@@ -150,6 +156,9 @@ impl From<&OrderItemWithProduct> for OrderItemWithProductDto {
             product_name: r.product_name.clone(),
             product_sku: r.product_sku.clone(),
             product_image_url: r.product_image_url.clone(),
+            category_name: r.category_name.clone(),
+            product_bin_location: r.product_bin_location.clone(),
+            product_unit_type: r.product_unit_type,
         }
     }
 }

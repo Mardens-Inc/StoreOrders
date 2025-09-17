@@ -3,10 +3,12 @@ use crate::orders::orders_data::{
     AddToCartRequest, CreateOrderRequest, OrderWithItemsDto, StoreOrderRecord, StoreOrderRecordDto,
     UpdateOrderStatusRequest, UserContext,
 };
+use crate::stores::stores_data::StoreRecord;
 use actix_web::{get, post, put, web, HttpRequest, HttpResponse, Responder};
 use actix_web_httpauth::middleware::HttpAuthentication;
 use database_common_lib::{database_connection::DatabaseConnectionData, http_error::Result};
 use serde_json::json;
+use std::collections::BTreeMap;
 static MANIFEST_TEMPLATE: &str = include_str!("../../templates/order-manifest-template.html.tera");
 #[get("")]
 pub async fn get_orders(
@@ -313,19 +315,45 @@ pub async fn get_order_manifest(
             })))
         }
     };
+    // Fetch store display name
+    let store_rec = StoreRecord::get_by_id(&pool, order.order.store_id).await?;
+    let store_name = if let Some(s) = store_rec {
+        match (s.city.as_deref(), s.address.as_deref()) {
+            (Some(city), Some(addr)) if !city.is_empty() && !addr.is_empty() => {
+                format!("{} - {}", city, addr)
+            }
+            (Some(city), _) if !city.is_empty() => city.to_string(),
+            (_, Some(addr)) if !addr.is_empty() => addr.to_string(),
+            _ => format!("Store {}", order.order.store_id),
+        }
+    } else {
+        format!("Store {}", order.order.store_id)
+    };
+
+    // Group items by category name (sorted)
+    let mut groups_map: BTreeMap<String, Vec<serde_json::Value>> = BTreeMap::new();
+    for it in &order.items {
+        let key = it.category_name.clone();
+        groups_map
+            .entry(key)
+            .or_default()
+            .push(serde_json::to_value(it).unwrap_or(serde_json::Value::Null));
+    }
+    let groups: Vec<serde_json::Value> = groups_map
+        .into_iter()
+        .map(|(cat, items)| serde_json::json!({"category_name": cat, "items": items}))
+        .collect();
+
+    // Build Tera context
+    let mut ctx = tera::Context::new();
+    ctx.insert("store_name", &store_name);
+    ctx.insert("dto", &order);
+    ctx.insert("groups", &groups);
+
     let mut tera = tera::Tera::default();
     tera.add_raw_template("order-manifest-template", MANIFEST_TEMPLATE)
         .unwrap();
-    let manifest = tera
-        .render(
-            "order-manifest-template",
-            &tera::Context::from_serialize(order).map_err(|_| {
-                HttpResponse::InternalServerError().json(json!({
-                    "message": "Failed to render manifest template",
-                }))
-            })?,
-        )
-        .unwrap();
+    let manifest = tera.render("order-manifest-template", &ctx).unwrap();
     Ok(HttpResponse::Ok().content_type("text/html").body(manifest))
 }
 
@@ -334,13 +362,17 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
     cfg.service(
         web::scope("/orders")
-            .wrap(auth)
-            .service(get_orders)
-            .service(get_store_orders)
-            .service(get_order)
-            .service(create_order)
-            .service(update_order_status)
-            .service(add_to_cart)
+            .service(get_order_manifest)
+            .service(
+                web::scope("")
+                    .wrap(auth)
+                    .service(get_orders)
+                    .service(get_store_orders)
+                    .service(get_order)
+                    .service(create_order)
+                    .service(update_order_status)
+                    .service(add_to_cart),
+            )
             .default_service(web::to(|| async {
                 HttpResponse::NotFound().json(json!({ "error": "API endpoint not found" }))
             })),

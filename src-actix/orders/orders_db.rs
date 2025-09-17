@@ -21,6 +21,10 @@ struct OrderItemWithProductQuery {
     product_name: String,
     product_sku: String,
     product_image_url: Option<String>,
+    product_bin_location: String,
+    product_unit_type: i32,
+    // Category fields
+    category_name: String,
 }
 
 impl From<OrderItemWithProductQuery> for OrderItemWithProduct {
@@ -38,6 +42,9 @@ impl From<OrderItemWithProductQuery> for OrderItemWithProduct {
             product_name: query_result.product_name,
             product_sku: query_result.product_sku,
             product_image_url: query_result.product_image_url,
+            category_name: query_result.category_name,
+            product_bin_location: query_result.product_bin_location,
+            product_unit_type: query_result.product_unit_type,
         }
     }
 }
@@ -334,11 +341,15 @@ impl OrderItemRecord {
                 oi.created_at,
                 p.name as product_name,
                 p.sku as product_sku,
-                p.image_url as product_image_url
+                p.image_url as product_image_url,
+                p.bin_location as product_bin_location,
+                p.unit_type as product_unit_type,
+                c.name as category_name
             FROM `order_items` oi
             JOIN `products` p ON oi.product_id = p.id
+            JOIN `categories` c ON p.category_id = c.id
             WHERE oi.order_id = ?
-            ORDER BY oi.created_at ASC
+            ORDER BY c.name ASC, p.name ASC, oi.created_at ASC
             "#,
         )
         .bind(order_id)
