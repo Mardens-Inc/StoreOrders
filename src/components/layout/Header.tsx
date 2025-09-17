@@ -9,12 +9,14 @@ import {authApi, ordersApi, productsApi} from "../../utils/api.ts";
 import CreateProductModal from "../modals/CreateProductModal";
 import EditUserModal from "../modals/EditUserModal";
 import {categoriesApi, storesApi} from "../../utils/api";
+import {HelpModal} from "../modals/HelpModal.tsx";
 
 const Header: React.FC = () =>
 {
     const {user, logout} = useAuth();
     const {getTotalItems, setIsOpen, addToCart} = useCart();
     const {isMobileMenuOpen, setIsMobileMenuOpen, isMobile} = useLayout();
+    const [showHelpModal, setShowHelpModal] = useState(false);
 
     // Product edit modal state
     const [isEditProductOpen, setIsEditProductOpen] = useState(false);
@@ -486,7 +488,7 @@ const Header: React.FC = () =>
                             </div>
                         </DropdownTrigger>
                         <DropdownMenu aria-label="User menu">
-                            <DropdownItem key="profile" className="h-14 gap-2">
+                            <DropdownItem key="profile" className="h-17 gap-2">
                                 <div className="flex flex-col">
                                     <p className="font-semibold">{getUserDisplayName()}</p>
                                     <p className="text-small text-gray-500 truncate">{user?.email}</p>
@@ -503,9 +505,9 @@ const Header: React.FC = () =>
                             {/*<DropdownItem key="settings" startContent={<Icon icon="lucide:settings"/>}>*/}
                             {/*    Settings*/}
                             {/*</DropdownItem>*/}
-                            {/*<DropdownItem key="help" startContent={<Icon icon="lucide:help-circle"/>}>*/}
-                            {/*    Help & Support*/}
-                            {/*</DropdownItem>*/}
+                            <DropdownItem key="help" startContent={<Icon icon="lucide:help-circle"/>} onPress={() => setShowHelpModal(true)}>
+                                Help & Support
+                            </DropdownItem>
                             <DropdownItem
                                 key="logout"
                                 color="danger"
@@ -519,6 +521,8 @@ const Header: React.FC = () =>
                 </NavbarItem>
             </NavbarContent>
 
+            <HelpModal isOpen={showHelpModal} onClose={() => setShowHelpModal(false)}/>
+
             {/* Product Modal (Edit) */}
             <CreateProductModal
                 mode="edit"
@@ -527,25 +531,32 @@ const Header: React.FC = () =>
                 formData={productForm}
                 setFormData={setProductForm}
                 categories={productCategories}
-                onUpdateProduct={async () => {
+                onUpdateProduct={async () =>
+                {
                     if (!selectedProductId) return;
-                    try {
+                    try
+                    {
                         setProductActionLoading(true);
                         await productsApi.updateProduct(selectedProductId, productForm);
-                        setProductResults(prev => prev.map(pr => pr.id === selectedProductId ? { ...pr, ...productForm } : pr));
+                        setProductResults(prev => prev.map(pr => pr.id === selectedProductId ? {...pr, ...productForm} : pr));
                         setIsEditProductOpen(false);
-                    } catch (e) {
+                    } catch (e)
+                    {
                         console.error("Failed to update product from header", e);
-                    } finally {
+                    } finally
+                    {
                         setProductActionLoading(false);
                     }
                 }}
-                onImageSelect={(file: File) => {
-                    try {
+                onImageSelect={(file: File) =>
+                {
+                    try
+                    {
                         setUploadingImage(true);
                         const url = URL.createObjectURL(file);
-                        setProductForm((prev: any) => ({ ...prev, image_url: url }));
-                    } finally {
+                        setProductForm((prev: any) => ({...prev, image_url: url}));
+                    } finally
+                    {
                         setUploadingImage(false);
                     }
                 }}
