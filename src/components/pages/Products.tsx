@@ -149,9 +149,9 @@ const Products: React.FC = () =>
         localStorage.setItem("category_view_mode", viewMode);
     }, [viewMode]);
 
-    const handleAddToCart = (product: Product) =>
+    const handleAddToCart = (product: Product, quantity?: number) =>
     {
-        addToCart(product);
+        addToCart(product, quantity);
     };
 
     const renderTableView = () => (
