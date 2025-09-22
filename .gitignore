@@ -135,5 +135,8 @@ Cargo.lock
 
 # InteliJ
 .idea/workspace.xml
+.idea/copilot*
 
 dev-server.json
+vite.config.d.ts
+vite.config.js
